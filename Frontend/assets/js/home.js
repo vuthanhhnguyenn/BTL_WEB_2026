@@ -17,8 +17,15 @@
 
   const renderFeatured = async () => {
     if (!featuredGrid) return;
-    const data = await ApiService.getRooms({});
-    const rooms = data.content.slice(0, 6);
+    const ids = await ApiService.getFirst12RoomIds();
+
+    const detailResults = await Promise.allSettled(
+    ids.map((id) => ApiService.getRoomById(id))
+  );
+
+  const rooms = detailResults
+    .filter((r) => r.status === 'fulfilled' && r.value)
+    .map((r) => r.value);
     featuredGrid.innerHTML = rooms.map(roomCardHtml).join('');
   };
 

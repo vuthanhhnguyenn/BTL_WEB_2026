@@ -76,6 +76,17 @@
     return request(`/rooms/search?${query.toString()}`);
   };
 
+  const getInitialRooms = async (limit = 5) => {
+    if (USE_MOCK) {
+      const rooms = getAllMockRooms()
+        .slice()
+        .sort((a, b) => Number(a.id) - Number(b.id))
+        .slice(0, limit);
+      return { content: rooms, totalElements: rooms.length };
+    }
+    return request(`/rooms/initial?limit=${Number(limit) || 5}`);
+  };
+
   const getRoomById = async (id) => {
     if (USE_MOCK) {
       return getAllMockRooms().find((room) => Number(room.id) === Number(id)) || null;
@@ -158,11 +169,21 @@
       return null;
     }
   };
-
+  const getFirst12RoomIds = async () => {
+  if (USE_MOCK) {
+    return getAllMockRooms()
+      .map((room) => Number(room.id))
+      .sort((a, b) => a - b)
+      .slice(0, 12);
+  }
+  return request('/rooms/ids/first-12');
+};
   window.ApiService = {
     formatCurrency,
+    getInitialRooms,
     getRooms,
     getRoomById,
+    getFirst12RoomIds,
     login,
     register,
     createListing,

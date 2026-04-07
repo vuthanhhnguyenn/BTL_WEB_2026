@@ -1,4 +1,5 @@
-﻿(() => {
+(() => {
+  const DEFAULT_VISIBLE_LIMIT = 5;
   const listNode = document.getElementById('roomsGrid');
   const resultInfo = document.getElementById('resultInfo');
   const filterForm = document.getElementById('roomFilterForm');
@@ -37,15 +38,27 @@
     </article>
   `;
 
+  const hasActiveFilters = (params = {}) =>
+    ['keyword', 'district', 'minPrice', 'maxPrice'].some(
+      (key) => String(params[key] || '').trim() !== ''
+    );
+
   const renderRooms = async (params) => {
     if (!listNode) return;
     listNode.innerHTML = '<p>Đang tải dữ liệu phòng...</p>';
 
     try {
-      const data = await ApiService.getRooms(params);
+      const usingFilters = hasActiveFilters(params);
+      const data = usingFilters
+        ? await ApiService.getRooms(params)
+        : await ApiService.getInitialRooms(DEFAULT_VISIBLE_LIMIT);
       const rooms = data.content || [];
+      const total = Number(data.totalElements || rooms.length);
+
       if (resultInfo) {
-        resultInfo.textContent = `Tìm thấy ${rooms.length} phòng phù hợp`;
+        resultInfo.textContent = usingFilters
+          ? `Tìm thấy ${total} phòng phù hợp`
+          : `Hãy dùng bộ lọc để tìm thêm.`;
       }
 
       if (!rooms.length) {

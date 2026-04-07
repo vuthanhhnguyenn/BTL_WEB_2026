@@ -1,7 +1,9 @@
 ﻿(() => {
   const AppConfig = {
-    API_BASE_URL: 'http://localhost:8080/api/v1',
-    USE_MOCK: true,
+    API_BASE_URL: 'http://localhost:4000/api/v1',
+    //API_BASE_URL: 'http://localhost:4000/api/v1',
+
+    USE_MOCK: false,
     STORAGE_KEYS: {
       TOKEN: 'troxinh_token',
       USER: 'troxinh_user',

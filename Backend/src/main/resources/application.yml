@@ -1,0 +1,21 @@
+spring:
+  application:
+    name: troxinh-db
+
+  datasource:
+    url: jdbc:mysql://gateway01.ap-southeast-1.prod.aws.tidbcloud.com:4000/troxinh_db?sslMode=VERIFY_IDENTITY&enabledTLSProtocols=TLSv1.2&serverTimezone=Asia/Ho_Chi_Minh
+    username: 1hVQEzTWNPxD4B9.root
+    password: byCMxWA8wjKCGl2l
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    database-platform: org.hibernate.dialect.MySQLDialect
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+server:
+  port: ${PORT:4000}
