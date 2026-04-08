@@ -1,6 +1,11 @@
 D:\Download\BTL_WEB_2026\Backend\src\main\java\com\troxinh\backend\BackendApplication.java
 D:\Download\BTL_WEB_2026\Backend\src\main\java\com\troxinh\backend\config\CorsConfig.java
+D:\Download\BTL_WEB_2026\Backend\src\main\java\com\troxinh\backend\controller\AuthController.java
 D:\Download\BTL_WEB_2026\Backend\src\main\java\com\troxinh\backend\controller\RoomController.java
+D:\Download\BTL_WEB_2026\Backend\src\main\java\com\troxinh\backend\dto\auth\LoginRequest.java
+D:\Download\BTL_WEB_2026\Backend\src\main\java\com\troxinh\backend\dto\auth\LoginResponse.java
+D:\Download\BTL_WEB_2026\Backend\src\main\java\com\troxinh\backend\dto\auth\RegisterRequest.java
+D:\Download\BTL_WEB_2026\Backend\src\main\java\com\troxinh\backend\dto\auth\RegisterResponse.java
 D:\Download\BTL_WEB_2026\Backend\src\main\java\com\troxinh\backend\dto\room\RoomContactResponse.java
 D:\Download\BTL_WEB_2026\Backend\src\main\java\com\troxinh\backend\dto\room\RoomDetailResponse.java
 D:\Download\BTL_WEB_2026\Backend\src\main\java\com\troxinh\backend\dto\room\RoomSearchResponse.java
@@ -11,5 +16,7 @@ D:\Download\BTL_WEB_2026\Backend\src\main\java\com\troxinh\backend\entity\User.j
 D:\Download\BTL_WEB_2026\Backend\src\main\java\com\troxinh\backend\repository\RoomContactRepository.java
 D:\Download\BTL_WEB_2026\Backend\src\main\java\com\troxinh\backend\repository\RoomImageRepository.java
 D:\Download\BTL_WEB_2026\Backend\src\main\java\com\troxinh\backend\repository\RoomRepository.java
+D:\Download\BTL_WEB_2026\Backend\src\main\java\com\troxinh\backend\repository\UserRepository.java
+D:\Download\BTL_WEB_2026\Backend\src\main\java\com\troxinh\backend\service\AuthService.java
 D:\Download\BTL_WEB_2026\Backend\src\main\java\com\troxinh\backend\service\RoomDetailService.java
 D:\Download\BTL_WEB_2026\Backend\src\main\java\com\troxinh\backend\service\RoomQueryService.java

@@ -1,8 +1,14 @@
 com\troxinh\backend\config\CorsConfig.class
+com\troxinh\backend\dto\auth\RegisterRequest.class
+com\troxinh\backend\service\AuthService.class
+com\troxinh\backend\dto\auth\RegisterResponse.class
 com\troxinh\backend\service\RoomDetailService.class
 com\troxinh\backend\controller\RoomController.class
 com\troxinh\backend\entity\RoomContact.class
+com\troxinh\backend\controller\AuthController.class
 com\troxinh\backend\dto\room\RoomSearchResponse.class
+com\troxinh\backend\dto\auth\LoginRequest.class
+com\troxinh\backend\dto\auth\LoginResponse.class
 com\troxinh\backend\entity\User.class
 com\troxinh\backend\dto\room\RoomContactResponse.class
 com\troxinh\backend\entity\RoomImage.class
@@ -13,3 +19,4 @@ com\troxinh\backend\entity\Room.class
 com\troxinh\backend\repository\RoomImageRepository.class
 com\troxinh\backend\service\RoomQueryService.class
 com\troxinh\backend\repository\RoomRepository.class
+com\troxinh\backend\repository\UserRepository.class
