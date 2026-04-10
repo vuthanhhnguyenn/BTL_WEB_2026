@@ -56,7 +56,16 @@
 
     if (!response.ok) {
       const text = await response.text();
-      throw new Error(text || 'Không thể kết nối API backend.');
+      let message = text || 'Không thể kết nối API backend.';
+
+      try {
+        const parsed = JSON.parse(text);
+        message = parsed.message || parsed.error || message;
+      } catch {
+        // Keep raw text when backend does not return JSON.
+      }
+
+      throw new Error(message);
     }
 
     if (response.status === 204) return null;

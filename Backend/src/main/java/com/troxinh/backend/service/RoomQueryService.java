@@ -3,8 +3,10 @@ package com.troxinh.backend.service;
 import com.troxinh.backend.dto.room.RoomContactResponse;
 import com.troxinh.backend.dto.room.RoomDetailResponse;
 import com.troxinh.backend.dto.room.RoomSearchResponse;
+import com.troxinh.backend.entity.RoomContact;
 import com.troxinh.backend.entity.Room;
 import com.troxinh.backend.entity.RoomImage;
+import com.troxinh.backend.repository.RoomContactRepository;
 import com.troxinh.backend.repository.RoomImageRepository;
 import com.troxinh.backend.repository.RoomRepository;
 import java.math.BigDecimal;
@@ -17,10 +19,16 @@ import org.springframework.data.domain.Sort;
 public class RoomQueryService {
     private final RoomRepository roomRepository;
     private final RoomImageRepository roomImageRepository;
+    private final RoomContactRepository roomContactRepository;
 
-    public RoomQueryService(RoomRepository roomRepository, RoomImageRepository roomImageRepository) {
+    public RoomQueryService(
+        RoomRepository roomRepository,
+        RoomImageRepository roomImageRepository,
+        RoomContactRepository roomContactRepository
+    ) {
         this.roomRepository = roomRepository;
         this.roomImageRepository = roomImageRepository;
+        this.roomContactRepository = roomContactRepository;
     }
 
     public List<Long> getFirst12RoomIds() {
@@ -64,6 +72,10 @@ public class RoomQueryService {
             images = List.of("https://png.pngtree.com/png-vector/20220820/ourmid/pngtree-no-results-found-neon-light-icon-graphic-site-illuminated-vector-png-image_33356826.jpg");
         }
 
+        RoomContactResponse contact = roomContactRepository.findByRoomId(room.getId())
+            .map(this::toContactResponse)
+            .orElseGet(() -> new RoomContactResponse("Not in DB", "Not in DB", "Not in DB"));
+
         return new RoomDetailResponse(
             room.getId(),
             safe(room.getTitle()),
@@ -79,7 +91,15 @@ public class RoomQueryService {
             room.getBathrooms() == null ? 0 : room.getBathrooms(),
             safe(room.getDescription()),
             images,
-            new RoomContactResponse("Not in DB", "Not in DB", "Not in DB")
+            contact
+        );
+    }
+
+    private RoomContactResponse toContactResponse(RoomContact contact) {
+        return new RoomContactResponse(
+            safe(contact.getContactName()),
+            safe(contact.getContactPhone()),
+            safe(contact.getContactEmail())
         );
     }
 

@@ -2,6 +2,7 @@ package com.troxinh.backend.service;
 
 import com.troxinh.backend.dto.auth.LoginRequest;
 import com.troxinh.backend.dto.auth.LoginResponse;
+import com.troxinh.backend.dto.auth.LoginUserResponse;
 import com.troxinh.backend.dto.auth.RegisterRequest;
 import com.troxinh.backend.dto.auth.RegisterResponse;
 import com.troxinh.backend.entity.User;
@@ -78,14 +79,21 @@ public class AuthService {
         }
 
         return new LoginResponse(
-            user.getId(),
-            user.getFullName(),
-            user.getEmail(),
-            user.getPhone(),
-            user.getRole(),
-            user.getAvatarUrl(),
+            buildToken(user),
+            new LoginUserResponse(
+                user.getId(),
+                user.getFullName(),
+                user.getEmail(),
+                user.getPhone(),
+                user.getRole(),
+                user.getAvatarUrl()
+            ),
             "Login successful"
         );
+    }
+
+    private String buildToken(User user) {
+        return "troxinh-token-" + user.getId();
     }
 
     private String normalizeRole(String role) {

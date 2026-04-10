@@ -79,51 +79,135 @@ public class Room {
         return id;
     }
 
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public User getUser() {
+        return user;
+    }
+
+    public void setUser(User user) {
+        this.user = user;
+    }
+
     public String getTitle() {
         return title;
+    }
+
+    public void setTitle(String title) {
+        this.title = title;
     }
 
     public String getAddress() {
         return address;
     }
 
+    public void setAddress(String address) {
+        this.address = address;
+    }
+
     public String getDistrict() {
         return district;
+    }
+
+    public void setDistrict(String district) {
+        this.district = district;
     }
 
     public String getCity() {
         return city;
     }
 
+    public void setCity(String city) {
+        this.city = city;
+    }
+
     public String getMapAddress() {
         return mapAddress;
+    }
+
+    public void setMapAddress(String mapAddress) {
+        this.mapAddress = mapAddress;
     }
 
     public Long getPriceFrom() {
         return priceFrom;
     }
 
+    public void setPriceFrom(Long priceFrom) {
+        this.priceFrom = priceFrom;
+    }
+
     public Long getPriceTo() {
         return priceTo;
+    }
+
+    public void setPriceTo(Long priceTo) {
+        this.priceTo = priceTo;
     }
 
     public BigDecimal getArea() {
         return area;
     }
 
+    public void setArea(BigDecimal area) {
+        this.area = area;
+    }
+
     public String getDirection() {
         return direction;
+    }
+
+    public void setDirection(String direction) {
+        this.direction = direction;
     }
 
     public Integer getBedrooms() {
         return bedrooms;
     }
 
+    public void setBedrooms(Integer bedrooms) {
+        this.bedrooms = bedrooms;
+    }
+
     public Integer getBathrooms() {
         return bathrooms;
     }
 
+    public void setBathrooms(Integer bathrooms) {
+        this.bathrooms = bathrooms;
+    }
+
     public String getDescription() {
         return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    public Integer getViewCount() {
+        return viewCount;
+    }
+
+    public void setViewCount(Integer viewCount) {
+        this.viewCount = viewCount;
+    }
+
+    public Boolean getIsFeatured() {
+        return isFeatured;
+    }
+
+    public void setIsFeatured(Boolean isFeatured) {
+        this.isFeatured = isFeatured;
     }
 }
