@@ -119,8 +119,20 @@
       method: 'POST',
       body: JSON.stringify({ email, password })
     });
-    localStorage.setItem(STORAGE_KEYS.TOKEN, data.token);
-    localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(data.user));
+
+    const user = data.user || {
+      id: data.id,
+      fullName: data.fullName,
+      email: data.email,
+      phone: data.phone,
+      role: data.role,
+      avatarUrl: data.avatarUrl
+    };
+
+    if (data.token) {
+      localStorage.setItem(STORAGE_KEYS.TOKEN, data.token);
+    }
+    localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
     return data;
   };
 
