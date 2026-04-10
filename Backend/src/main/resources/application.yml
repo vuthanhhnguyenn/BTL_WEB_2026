@@ -19,3 +19,8 @@ spring:
 
 server:
   port: ${PORT:4000}
+
+app:
+  jwt:
+    secret: TroXinh2026SecretKeyForJWTTokenGenerationAndValidation123456789
+    expiration: 86400000
