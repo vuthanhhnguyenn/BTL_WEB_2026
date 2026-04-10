@@ -12,7 +12,8 @@ public interface RoomRepository extends JpaRepository<Room, Long> {
     Optional<Room> findById(Long id);
     List<Room> findTop12ByOrderByIdAsc();
 
-    
+    List<Room> findByUserIdOrderByCreatedAtDesc(Long userId);
+
     @Query("""
     SELECT r FROM Room r
     WHERE (:keyword IS NULL OR LOWER(r.city) LIKE LOWER(CONCAT('%', :keyword, '%'))

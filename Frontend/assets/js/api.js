@@ -190,6 +190,45 @@
       return null;
     }
   };
+
+  const saveUser = (user) => {
+    if (user) {
+      localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
+    }
+  };
+
+  const getUserProfile = async (id) => {
+    if (USE_MOCK) {
+      const currentUser = getCurrentUser();
+      if (currentUser && currentUser.id === id) {
+        return currentUser;
+      }
+      throw new Error('User not found');
+    }
+    return request(`/users/${id}`, { auth: true });
+  };
+
+  const updateUserProfile = async (id, payload) => {
+    if (USE_MOCK) {
+      const currentUser = getCurrentUser();
+      if (currentUser && currentUser.id === id) {
+        const updatedUser = { ...currentUser, ...payload };
+        saveUser(updatedUser);
+        return updatedUser;
+      }
+      throw new Error('User not found');
+    }
+    const updatedUser = await request(`/users/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+      auth: true
+    });
+    if (updatedUser) {
+      saveUser(updatedUser);
+    }
+    return updatedUser;
+  };
+
   const getFirst12RoomIds = async () => {
   if (USE_MOCK) {
     return getAllMockRooms()
@@ -199,6 +238,62 @@
   }
   return request('/rooms/ids/first-12');
 };
+
+  const getMyRooms = async () => {
+    if (USE_MOCK) {
+      const currentUser = getCurrentUser();
+      if (!currentUser || !currentUser.id) {
+        return { content: [], totalElements: 0 };
+      }
+      const localRooms = getLocalRooms().filter(room => room.userId === currentUser.id);
+      return { content: localRooms, totalElements: localRooms.length };
+    }
+    return request('/rooms/my', { auth: true });
+  };
+
+  const updateRoom = async (id, roomPayload, imageFiles = []) => {
+    if (USE_MOCK) {
+      const localRooms = getLocalRooms();
+      const index = localRooms.findIndex(room => Number(room.id) === Number(id));
+      if (index === -1) throw new Error('Room not found');
+
+      const previewImages = imageFiles.length
+        ? imageFiles.map((file) => URL.createObjectURL(file))
+        : localRooms[index].images || [];
+
+      const updatedRoom = {
+        ...localRooms[index],
+        ...roomPayload,
+        images: previewImages
+      };
+      localRooms[index] = updatedRoom;
+      setLocalRooms(localRooms);
+      return updatedRoom;
+    }
+
+    const formData = new FormData();
+    formData.append('data', new Blob([JSON.stringify(roomPayload)], { type: 'application/json' }));
+    if (imageFiles && imageFiles.length) {
+      imageFiles.forEach((file) => formData.append('images', file));
+    }
+
+    return request(`/rooms/${id}`, {
+      method: 'PUT',
+      body: formData,
+      auth: true,
+      rawBody: true
+    });
+  };
+
+  const deleteRoom = async (id) => {
+    if (USE_MOCK) {
+      const localRooms = getLocalRooms().filter(room => Number(room.id) !== Number(id));
+      setLocalRooms(localRooms);
+      return true;
+    }
+    return request(`/rooms/${id}`, { method: 'DELETE', auth: true });
+  };
+
   window.ApiService = {
     formatCurrency,
     getInitialRooms,
@@ -209,6 +304,12 @@
     register,
     createListing,
     logout,
-    getCurrentUser
+    getCurrentUser,
+    saveUser,
+    getUserProfile,
+    updateUserProfile,
+    getMyRooms,
+    updateRoom,
+    deleteRoom
   };
 })();

@@ -2,6 +2,7 @@ D:\BTL_WEB_2026\Backend\src\main\java\com\troxinh\backend\BackendApplication.jav
 D:\BTL_WEB_2026\Backend\src\main\java\com\troxinh\backend\config\CorsConfig.java
 D:\BTL_WEB_2026\Backend\src\main\java\com\troxinh\backend\controller\AuthController.java
 D:\BTL_WEB_2026\Backend\src\main\java\com\troxinh\backend\controller\RoomController.java
+D:\BTL_WEB_2026\Backend\src\main\java\com\troxinh\backend\controller\UserController.java
 D:\BTL_WEB_2026\Backend\src\main\java\com\troxinh\backend\dto\auth\LoginRequest.java
 D:\BTL_WEB_2026\Backend\src\main\java\com\troxinh\backend\dto\auth\LoginResponse.java
 D:\BTL_WEB_2026\Backend\src\main\java\com\troxinh\backend\dto\auth\LoginUserResponse.java
@@ -12,6 +13,9 @@ D:\BTL_WEB_2026\Backend\src\main\java\com\troxinh\backend\dto\room\RoomContactRe
 D:\BTL_WEB_2026\Backend\src\main\java\com\troxinh\backend\dto\room\RoomCreateRequest.java
 D:\BTL_WEB_2026\Backend\src\main\java\com\troxinh\backend\dto\room\RoomDetailResponse.java
 D:\BTL_WEB_2026\Backend\src\main\java\com\troxinh\backend\dto\room\RoomSearchResponse.java
+D:\BTL_WEB_2026\Backend\src\main\java\com\troxinh\backend\dto\room\RoomUpdateRequest.java
+D:\BTL_WEB_2026\Backend\src\main\java\com\troxinh\backend\dto\user\UserResponse.java
+D:\BTL_WEB_2026\Backend\src\main\java\com\troxinh\backend\dto\user\UserUpdateRequest.java
 D:\BTL_WEB_2026\Backend\src\main\java\com\troxinh\backend\entity\Room.java
 D:\BTL_WEB_2026\Backend\src\main\java\com\troxinh\backend\entity\RoomContact.java
 D:\BTL_WEB_2026\Backend\src\main\java\com\troxinh\backend\entity\RoomImage.java
@@ -24,3 +28,4 @@ D:\BTL_WEB_2026\Backend\src\main\java\com\troxinh\backend\service\AuthService.ja
 D:\BTL_WEB_2026\Backend\src\main\java\com\troxinh\backend\service\RoomDetailService.java
 D:\BTL_WEB_2026\Backend\src\main\java\com\troxinh\backend\service\RoomQueryService.java
 D:\BTL_WEB_2026\Backend\src\main\java\com\troxinh\backend\service\RoomWriteService.java
+D:\BTL_WEB_2026\Backend\src\main\java\com\troxinh\backend\service\UserService.java

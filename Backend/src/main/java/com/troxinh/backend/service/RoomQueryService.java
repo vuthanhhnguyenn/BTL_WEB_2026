@@ -35,6 +35,12 @@ public class RoomQueryService {
         return roomRepository.findTop12ByOrderByIdAsc().stream().map(Room::getId).toList();
     }
 
+    public RoomSearchResponse getRoomsByUserId(Long userId) {
+        List<Room> rooms = roomRepository.findByUserIdOrderByCreatedAtDesc(userId);
+        List<RoomDetailResponse> items = rooms.stream().map(this::toRoomDetailResponse).toList();
+        return new RoomSearchResponse(items, items.size());
+    }
+
     public RoomSearchResponse getInitialRooms(int limit) {
         int safeLimit = limit > 0 ? limit : 5;
         List<Room> rooms = roomRepository

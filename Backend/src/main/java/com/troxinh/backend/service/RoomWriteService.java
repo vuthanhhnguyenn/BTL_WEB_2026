@@ -4,6 +4,7 @@ import com.troxinh.backend.dto.room.RoomContactRequest;
 import com.troxinh.backend.dto.room.RoomContactResponse;
 import com.troxinh.backend.dto.room.RoomCreateRequest;
 import com.troxinh.backend.dto.room.RoomDetailResponse;
+import com.troxinh.backend.dto.room.RoomUpdateRequest;
 import com.troxinh.backend.entity.Room;
 import com.troxinh.backend.entity.RoomContact;
 import com.troxinh.backend.entity.RoomImage;
@@ -164,6 +165,108 @@ public class RoomWriteService {
             savedContact.getContactPhone(),
             savedContact.getContactEmail()
         );
+    }
+
+    public RoomDetailResponse updateRoom(Long roomId, RoomUpdateRequest request, Long userId) {
+        Room room = roomRepository.findById(roomId)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Room not found"));
+
+        if (!room.getUser().getId().equals(userId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You can only update your own rooms");
+        }
+
+        if (request.priceFrom() > request.priceTo()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "priceFrom must not be greater than priceTo");
+        }
+
+        room.setTitle(normalize(request.title()));
+        room.setAddress(normalize(request.address()));
+        room.setDistrict(normalize(request.district()));
+        room.setCity(normalize(request.city()));
+        room.setMapAddress(normalize(request.mapAddress()));
+        room.setPriceFrom(request.priceFrom());
+        room.setPriceTo(request.priceTo());
+        room.setArea(request.area());
+        room.setDirection(normalize(request.direction()));
+        room.setBedrooms(request.bedrooms());
+        room.setBathrooms(request.bathrooms());
+        room.setDescription(normalize(request.description()));
+        if (request.status() != null && !request.status().isBlank()) {
+            room.setStatus(request.status());
+        }
+
+        Room savedRoom = roomRepository.save(room);
+
+        RoomContactResponse contact = updateContact(savedRoom, request.contact());
+
+        List<String> images = roomImageRepository.findByRoomIdOrderBySortOrderAscIdAsc(roomId)
+            .stream()
+            .map(RoomImage::getImageUrl)
+            .filter(url -> url != null && !url.isBlank())
+            .toList();
+
+        if (images.isEmpty()) {
+            images = List.of(FALLBACK_IMAGE);
+        }
+
+        return new RoomDetailResponse(
+            savedRoom.getId(),
+            savedRoom.getTitle(),
+            savedRoom.getAddress(),
+            savedRoom.getDistrict(),
+            savedRoom.getCity(),
+            savedRoom.getMapAddress(),
+            savedRoom.getPriceFrom(),
+            savedRoom.getPriceTo(),
+            savedRoom.getArea(),
+            savedRoom.getDirection(),
+            savedRoom.getBedrooms(),
+            savedRoom.getBathrooms(),
+            savedRoom.getDescription(),
+            images,
+            contact
+        );
+    }
+
+    private RoomContactResponse updateContact(Room room, RoomContactRequest request) {
+        RoomContact contact = roomContactRepository.findByRoomId(room.getId())
+            .orElseGet(() -> {
+                RoomContact newContact = new RoomContact();
+                newContact.setRoom(room);
+                return newContact;
+            });
+
+        contact.setContactName(normalize(request.name()));
+        contact.setContactPhone(normalize(request.phone()));
+        contact.setContactEmail(normalize(request.email()));
+        RoomContact savedContact = roomContactRepository.save(contact);
+
+        return new RoomContactResponse(
+            savedContact.getContactName(),
+            savedContact.getContactPhone(),
+            savedContact.getContactEmail()
+        );
+    }
+
+    public void deleteRoom(Long roomId, Long userId) {
+        Room room = roomRepository.findById(roomId)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Room not found"));
+
+        if (!room.getUser().getId().equals(userId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You can only delete your own rooms");
+        }
+
+        roomImageRepository.deleteAll(roomImageRepository.findByRoomIdOrderBySortOrderAscIdAsc(roomId));
+        roomContactRepository.deleteAll(roomContactRepository.findAll().stream()
+            .filter(c -> c.getRoom().getId().equals(roomId))
+            .toList());
+        roomContactRepository.deleteAll(roomContactRepository.findByRoomId(roomId).stream().toList());
+
+        roomRepository.delete(room);
+    }
+
+    public Long getUserIdFromToken(String authorizationHeader) {
+        return extractUserId(authorizationHeader);
     }
 
     private String toPlaceholderImageUrl(String originalFilename) {

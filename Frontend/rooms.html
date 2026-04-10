@@ -17,8 +17,10 @@
         <a id="nav-home" href="index.html">Trang chủ</a>
         <a id="nav-rooms" href="rooms.html">Xem phòng trọ</a>
         <a id="nav-post" href="post-room.html">Đăng tin</a>
+        <a id="nav-my-listings" href="my-listings.html" hidden>Tin của tôi</a>
         <a id="nav-about" href="about.html">Giới thiệu</a>
         <a id="nav-login" href="login.html">Đăng nhập</a>
+        <a id="nav-profile" href="profile.html" hidden>Thông tin cá nhân</a>
       </nav>
     </div>
   </header>
@@ -39,12 +41,20 @@
             <input id="district" name="district" type="text" placeholder="Ví dụ: Bình Thạnh">
           </div>
           <div class="field">
-            <label for="minPrice">Giá từ (VND)</label>
-            <input id="minPrice" name="minPrice" type="number" min="0" placeholder="3000000">
+            <label for="minPriceSlider">Giá từ</label>
+            <div class="price-slider">
+              <input type="range" id="minPriceSlider" min="0" max="50000000" step="500000" value="0">
+              <input id="minPrice" name="minPrice" type="number" min="0" max="50000000" step="500000" placeholder="Từ">
+              <span id="minPriceDisplay" class="price-display">0 vnđ</span>
+            </div>
           </div>
           <div class="field">
-            <label for="maxPrice">Giá đến (VND)</label>
-            <input id="maxPrice" name="maxPrice" type="number" min="0" placeholder="7000000">
+            <label for="maxPriceSlider">Giá đến</label>
+            <div class="price-slider">
+              <input type="range" id="maxPriceSlider" min="0" max="50000000" step="500000" value="20000000">
+              <input id="maxPrice" name="maxPrice" type="number" min="0" max="50000000" step="500000" placeholder="Đến">
+              <span id="maxPriceDisplay" class="price-display">20.000.000 vnđ</span>
+            </div>
           </div>
           <div class="field full">
             <button class="btn btn-primary" type="submit">Lọc phòng trọ</button>

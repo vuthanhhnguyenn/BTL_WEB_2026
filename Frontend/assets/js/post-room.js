@@ -10,6 +10,47 @@
     messageNode.hidden = false;
   };
 
+  const formatPrice = (value) => {
+    return new Intl.NumberFormat('vi-VN').format(value) + ' vnđ';
+  };
+
+  const initPriceSlider = () => {
+    const priceFromSlider = document.getElementById('priceFromSlider');
+    const priceFromInput = document.getElementById('priceFrom');
+    const priceFromDisplay = document.getElementById('priceFromDisplay');
+    const priceToSlider = document.getElementById('priceToSlider');
+    const priceToInput = document.getElementById('priceTo');
+    const priceToDisplay = document.getElementById('priceToDisplay');
+
+    if (priceFromSlider && priceFromInput && priceFromDisplay) {
+      const syncSliderToInput = () => {
+        priceFromInput.value = priceFromSlider.value;
+        priceFromDisplay.textContent = formatPrice(priceFromSlider.value);
+      };
+      const syncInputToSlider = () => {
+        priceFromSlider.value = priceFromInput.value;
+        priceFromDisplay.textContent = formatPrice(priceFromInput.value);
+      };
+      priceFromSlider.addEventListener('input', syncSliderToInput);
+      priceFromInput.addEventListener('input', syncInputToSlider);
+      syncSliderToInput();
+    }
+
+    if (priceToSlider && priceToInput && priceToDisplay) {
+      const syncSliderToInput = () => {
+        priceToInput.value = priceToSlider.value;
+        priceToDisplay.textContent = formatPrice(priceToSlider.value);
+      };
+      const syncInputToSlider = () => {
+        priceToSlider.value = priceToInput.value;
+        priceToDisplay.textContent = formatPrice(priceToInput.value);
+      };
+      priceToSlider.addEventListener('input', syncSliderToInput);
+      priceToInput.addEventListener('input', syncInputToSlider);
+      syncSliderToInput();
+    }
+  };
+
   const renderPreview = (files) => {
     if (!preview) return;
     if (!files.length) {
@@ -59,6 +100,8 @@
 
   const init = () => {
     if (!form) return;
+
+    initPriceSlider();
 
     const fileInput = form.querySelector('input[name="images"]');
     if (fileInput) {

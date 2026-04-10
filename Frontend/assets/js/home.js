@@ -2,7 +2,7 @@
   const searchForm = document.getElementById('homeSearchForm');
   const featuredGrid = document.getElementById('featuredGrid');
 
-  const roomCardHtml = (room) => `
+    const roomCardHtml = (room) => `
     <article class="card room-card zoom-hover page-enter">
       <img src="${room.images[0]}" alt="${room.title}">
       <div class="room-card-body">
@@ -10,7 +10,7 @@
         <h3>${room.title}</h3>
         <div class="room-price">${ApiService.formatCurrency(room.priceFrom)} - ${ApiService.formatCurrency(room.priceTo)}</div>
         <div class="room-meta">${room.area}m2 | ${room.district}</div>
-        <a class="btn btn-outline" href="room-detail.html?id=${room.id}">Xem chi tiết</a>
+        <a class="btn btn-primary" href="room-detail.html?id=${room.id}">Xem chi tiết phòng</a>
       </div>
     </article>
   `;

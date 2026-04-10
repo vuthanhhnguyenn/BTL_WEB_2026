@@ -14,6 +14,41 @@
     };
   };
 
+  const formatPrice = (value) => {
+    return new Intl.NumberFormat('vi-VN').format(value) + ' vnđ';
+  };
+
+  const initPriceSliders = () => {
+    const minSlider = document.getElementById('minPriceSlider');
+    const minInput = document.getElementById('minPrice');
+    const minDisplay = document.getElementById('minPriceDisplay');
+    const maxSlider = document.getElementById('maxPriceSlider');
+    const maxInput = document.getElementById('maxPrice');
+    const maxDisplay = document.getElementById('maxPriceDisplay');
+
+    if (minSlider && minInput && minDisplay) {
+      minSlider.addEventListener('input', () => {
+        minInput.value = minSlider.value;
+        minDisplay.textContent = formatPrice(minSlider.value);
+      });
+      minInput.addEventListener('input', () => {
+        minSlider.value = minInput.value;
+        minDisplay.textContent = formatPrice(minInput.value);
+      });
+    }
+
+    if (maxSlider && maxInput && maxDisplay) {
+      maxSlider.addEventListener('input', () => {
+        maxInput.value = maxSlider.value;
+        maxDisplay.textContent = formatPrice(maxSlider.value);
+      });
+      maxInput.addEventListener('input', () => {
+        maxSlider.value = maxInput.value;
+        maxDisplay.textContent = formatPrice(maxInput.value);
+      });
+    }
+  };
+
   const applyQueryToForm = () => {
     if (!filterForm) return;
     const q = toQueryParams();
@@ -22,6 +57,24 @@
         filterForm.elements[key].value = q[key];
       }
     });
+
+    const minSlider = document.getElementById('minPriceSlider');
+    const minInput = document.getElementById('minPrice');
+    const minDisplay = document.getElementById('minPriceDisplay');
+    const maxSlider = document.getElementById('maxPriceSlider');
+    const maxInput = document.getElementById('maxPrice');
+    const maxDisplay = document.getElementById('maxPriceDisplay');
+
+    if (q.minPrice) {
+      if (minSlider) minSlider.value = q.minPrice;
+      if (minInput) minInput.value = q.minPrice;
+      if (minDisplay) minDisplay.textContent = formatPrice(q.minPrice);
+    }
+    if (q.maxPrice) {
+      if (maxSlider) maxSlider.value = q.maxPrice;
+      if (maxInput) maxInput.value = q.maxPrice;
+      if (maxDisplay) maxDisplay.textContent = formatPrice(q.maxPrice);
+    }
   };
 
   const roomCardHtml = (room) => `
@@ -88,6 +141,7 @@
     });
   };
 
+  initPriceSliders();
   applyQueryToForm();
   initFilterForm();
   renderRooms(toQueryParams());
