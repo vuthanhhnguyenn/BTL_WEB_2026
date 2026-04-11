@@ -1,7 +1,10 @@
 package com.troxinh.backend.controller;
 
+import com.troxinh.backend.dto.auth.ChangePasswordRequest;
 import com.troxinh.backend.dto.user.UserResponse;
 import com.troxinh.backend.dto.user.UserUpdateRequest;
+import com.troxinh.backend.service.AuthService;
+import com.troxinh.backend.service.JwtService;
 import com.troxinh.backend.service.UserService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
@@ -20,9 +23,13 @@ import org.springframework.web.server.ResponseStatusException;
 public class UserController {
 
     private final UserService userService;
+    private final AuthService authService;
+    private final JwtService jwtService;
 
-    public UserController(UserService userService) {
+    public UserController(UserService userService, AuthService authService, JwtService jwtService) {
         this.userService = userService;
+        this.authService = authService;
+        this.jwtService = jwtService;
     }
 
     @GetMapping("/{id}")
@@ -43,18 +50,34 @@ public class UserController {
         return ResponseEntity.ok(userService.updateUser(id, request));
     }
 
+    @PutMapping("/{id}/change-password")
+    public ResponseEntity<?> changePassword(
+            @PathVariable Long id,
+            @Valid @RequestBody ChangePasswordRequest request,
+            @RequestHeader(value = "Authorization", required = false) String authorizationHeader
+    ) {
+        Long authorizedId = extractUserId(authorizationHeader);
+        if (authorizedId == null || !authorizedId.equals(id)) {
+            throw new ResponseStatusException(org.springframework.http.HttpStatus.FORBIDDEN, "You can only change your own password");
+        }
+        authService.changePassword(id, request.oldPassword(), request.newPassword());
+        return ResponseEntity.ok(java.util.Map.of("success", true, "message", "Password changed successfully"));
+    }
+
     private Long extractUserId(String authorizationHeader) {
         if (authorizationHeader == null || authorizationHeader.isBlank()) {
             return null;
         }
-        String prefix = "Bearer troxinh-token-";
-        if (!authorizationHeader.startsWith(prefix)) {
-            return null;
-        }
         try {
-            return Long.parseLong(authorizationHeader.substring(prefix.length()).trim());
-        } catch (NumberFormatException ex) {
-            throw new ResponseStatusException(org.springframework.http.HttpStatus.UNAUTHORIZED, "Invalid token");
+            if (authorizationHeader.startsWith("Bearer ")) {
+                String token = authorizationHeader.substring(7);
+                if (jwtService.validateToken(token)) {
+                    return jwtService.getUserIdFromToken(token);
+                }
+            }
+        } catch (Exception e) {
+            // Invalid token
         }
+        return null;
     }
 }

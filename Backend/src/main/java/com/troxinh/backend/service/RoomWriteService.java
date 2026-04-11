@@ -32,17 +32,20 @@ public class RoomWriteService {
     private final RoomImageRepository roomImageRepository;
     private final RoomContactRepository roomContactRepository;
     private final UserRepository userRepository;
+    private final JwtService jwtService;
 
     public RoomWriteService(
         RoomRepository roomRepository,
         RoomImageRepository roomImageRepository,
         RoomContactRepository roomContactRepository,
-        UserRepository userRepository
+        UserRepository userRepository,
+        JwtService jwtService
     ) {
         this.roomRepository = roomRepository;
         this.roomImageRepository = roomImageRepository;
         this.roomContactRepository = roomContactRepository;
         this.userRepository = userRepository;
+        this.jwtService = jwtService;
     }
 
     public RoomDetailResponse createRoom(RoomCreateRequest request, List<MultipartFile> images, String authorizationHeader) {
@@ -109,17 +112,17 @@ public class RoomWriteService {
         if (authorizationHeader == null || authorizationHeader.isBlank()) {
             return null;
         }
-
-        String prefix = "Bearer troxinh-token-";
-        if (!authorizationHeader.startsWith(prefix)) {
+        try {
+            if (authorizationHeader.startsWith("Bearer ")) {
+                String token = authorizationHeader.substring(7);
+                if (jwtService.validateToken(token)) {
+                    return jwtService.getUserIdFromToken(token);
+                }
+            }
+        } catch (Exception e) {
             return null;
         }
-
-        try {
-            return Long.parseLong(authorizationHeader.substring(prefix.length()).trim());
-        } catch (NumberFormatException ex) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid token");
-        }
+        return null;
     }
 
     private List<String> saveImages(Room room, List<MultipartFile> images) {

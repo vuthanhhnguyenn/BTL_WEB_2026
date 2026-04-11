@@ -1,6 +1,8 @@
 (() => {
   const form = document.getElementById('profileForm');
+  const passwordForm = document.getElementById('changePasswordForm');
   const messageNode = document.getElementById('profileMessage');
+  const passwordMessageNode = document.getElementById('passwordMessage');
   const logoutBtn = document.getElementById('logoutBtn');
   const avatarUrlInput = document.getElementById('avatarUrl');
   const avatarPreviewContainer = document.getElementById('avatarPreviewContainer');
@@ -11,6 +13,13 @@
     messageNode.className = `message ${type}`;
     messageNode.textContent = message;
     messageNode.hidden = false;
+  };
+
+  const showPasswordMessage = (message, type = 'success') => {
+    if (!passwordMessageNode) return;
+    passwordMessageNode.className = `message ${type}`;
+    passwordMessageNode.textContent = message;
+    passwordMessageNode.hidden = false;
   };
 
   const getCurrentUser = () => {
@@ -105,6 +114,33 @@
 
     handleAvatarPreview();
     handleLogout();
+
+    if (passwordForm) {
+      passwordForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const formData = new FormData(passwordForm);
+        const oldPassword = String(formData.get('oldPassword') || '').trim();
+        const newPassword = String(formData.get('newPassword') || '').trim();
+
+        if (!oldPassword || !newPassword) {
+          showPasswordMessage('Vui lòng nhập đầy đủ thông tin.', 'error');
+          return;
+        }
+
+        if (newPassword.length < 6) {
+          showPasswordMessage('Mật khẩu mới phải có ít nhất 6 ký tự.', 'error');
+          return;
+        }
+
+        try {
+          await window.ApiService?.changePassword?.(currentUser.id, oldPassword, newPassword);
+          showPasswordMessage('Đổi mật khẩu thành công!', 'success');
+          passwordForm.reset();
+        } catch (error) {
+          showPasswordMessage(error.message || 'Không thể đổi mật khẩu.', 'error');
+        }
+      });
+    }
 
     if (form) {
       form.addEventListener('submit', async (event) => {

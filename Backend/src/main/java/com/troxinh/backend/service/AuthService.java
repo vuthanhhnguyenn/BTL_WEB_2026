@@ -8,6 +8,7 @@ import com.troxinh.backend.dto.auth.RegisterResponse;
 import com.troxinh.backend.entity.User;
 import com.troxinh.backend.repository.UserRepository;
 import java.util.Set;
+import org.mindrot.jbcrypt.BCrypt;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -19,9 +20,11 @@ public class AuthService {
     private static final Set<String> ALLOWED_ROLES = Set.of("Nguoi tim phong", "Chu tro", "Admin");
 
     private final UserRepository userRepository;
+    private final JwtService jwtService;
 
-    public AuthService(UserRepository userRepository) {
+    public AuthService(UserRepository userRepository, JwtService jwtService) {
         this.userRepository = userRepository;
+        this.jwtService = jwtService;
     }
 
     public RegisterResponse register(RegisterRequest request) {
@@ -45,7 +48,7 @@ public class AuthService {
         newUser.setFullName(fullName);
         newUser.setEmail(email);
         newUser.setPhone(phone);
-        newUser.setPassword(password);
+        newUser.setPassword(BCrypt.hashpw(password, BCrypt.gensalt()));
         newUser.setAvatarUrl(null);
         newUser.setRole(role);
         newUser.setIsActive(true);
@@ -70,7 +73,7 @@ public class AuthService {
         User user = userRepository.findByEmailIgnoreCase(email)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid email or password"));
 
-        if (!user.getPassword().equals(password)) {
+        if (!BCrypt.checkpw(password, user.getPassword())) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid email or password");
         }
 
@@ -78,8 +81,10 @@ public class AuthService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Account is inactive");
         }
 
+        String token = jwtService.generateToken(user.getId(), user.getEmail(), user.getRole());
+
         return new LoginResponse(
-            buildToken(user),
+            token,
             new LoginUserResponse(
                 user.getId(),
                 user.getFullName(),
@@ -92,8 +97,16 @@ public class AuthService {
         );
     }
 
-    private String buildToken(User user) {
-        return "troxinh-token-" + user.getId();
+    public void changePassword(Long userId, String oldPassword, String newPassword) {
+        User user = userRepository.findById(userId)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+
+        if (!BCrypt.checkpw(oldPassword, user.getPassword())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Old password is incorrect");
+        }
+
+        user.setPassword(BCrypt.hashpw(newPassword, BCrypt.gensalt()));
+        userRepository.save(user);
     }
 
     private String normalizeRole(String role) {

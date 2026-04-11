@@ -229,6 +229,21 @@
     return updatedUser;
   };
 
+  const changePassword = async (id, oldPassword, newPassword) => {
+    if (USE_MOCK) {
+      const currentUser = getCurrentUser();
+      if (!currentUser || currentUser.id !== id) {
+        throw new Error('User not found');
+      }
+      return { success: true, message: 'Password changed successfully (mock)' };
+    }
+    return request(`/users/${id}/change-password`, {
+      method: 'PUT',
+      body: JSON.stringify({ oldPassword, newPassword }),
+      auth: true
+    });
+  };
+
   const getFirst12RoomIds = async () => {
   if (USE_MOCK) {
     return getAllMockRooms()
@@ -308,6 +323,7 @@
     saveUser,
     getUserProfile,
     updateUserProfile,
+    changePassword,
     getMyRooms,
     updateRoom,
     deleteRoom

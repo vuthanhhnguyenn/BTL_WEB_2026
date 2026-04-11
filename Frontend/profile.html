@@ -54,11 +54,29 @@
           </div>
           <div class="field full" id="avatarPreviewContainer" hidden>
             <label>Avatar preview</label>
-            <img id="avatarPreview" src="" alt="Avatar preview" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 2px solid var(--border);">
+            <img id="avatarPreview" src="" alt="Avatar preview" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 2px solid var(--border-light);">
           </div>
           <div class="field full" style="display: flex; gap: 12px;">
             <button class="btn btn-primary" type="submit">Lưu thay đổi</button>
             <button class="btn btn-outline" type="button" id="logoutBtn">Đăng xuất</button>
+          </div>
+        </form>
+
+        <hr style="margin: 24px 0; border: none; border-top: 1px solid var(--border-light);">
+
+        <h3 style="margin: 0 0 16px; color: var(--text);">Đổi mật khẩu</h3>
+        <p id="passwordMessage" hidden></p>
+        <form id="changePasswordForm" class="form-grid">
+          <div class="field">
+            <label for="oldPassword">Mật khẩu cũ</label>
+            <input id="oldPassword" name="oldPassword" type="password" required placeholder="Nhập mật khẩu cũ">
+          </div>
+          <div class="field">
+            <label for="newPassword">Mật khẩu mới</label>
+            <input id="newPassword" name="newPassword" type="password" required placeholder="Nhập mật khẩu mới (tối thiểu 6 ký tự)">
+          </div>
+          <div class="field full">
+            <button class="btn btn-primary" type="submit">Đổi mật khẩu</button>
           </div>
         </form>
       </section>

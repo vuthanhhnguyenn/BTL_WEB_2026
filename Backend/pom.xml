@@ -67,10 +67,11 @@
             <scope>runtime</scope>
         </dependency>
 
-        <!-- Security -->
+        <!-- BCrypt for password hashing (standalone, no Spring Security needed) -->
         <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-security</artifactId>
+            <groupId>org.mindrot</groupId>
+            <artifactId>jbcrypt</artifactId>
+            <version>0.4</version>
         </dependency>
 
         <dependency>
