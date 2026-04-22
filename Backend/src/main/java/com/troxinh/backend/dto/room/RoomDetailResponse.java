@@ -17,6 +17,7 @@ public record RoomDetailResponse(
     Integer bedrooms,
     Integer bathrooms,
     String description,
+    String status,
     List<String> images,
     RoomContactResponse contact
 ) {

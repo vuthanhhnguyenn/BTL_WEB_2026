@@ -1,7 +1,14 @@
-﻿(() => {
+(() => {
   const form = document.getElementById('postRoomForm');
   const preview = document.getElementById('imagePreview');
+  const imageCount = document.getElementById('imageCount');
+  const dropzone = document.getElementById('dropzone');
+  const fileInput = document.getElementById('images');
   const messageNode = document.getElementById('postMessage');
+
+  const objectUrlMap = new WeakMap();
+  let selectedFiles = [];
+  let isDropActive = false;
 
   const showMessage = (message, type = 'success') => {
     if (!messageNode) return;
@@ -12,6 +19,58 @@
 
   const formatPrice = (value) => {
     return new Intl.NumberFormat('vi-VN').format(value) + ' vnđ';
+  };
+
+  const updateImageCount = () => {
+    if (!imageCount) return;
+    imageCount.textContent = selectedFiles.length ? `${selectedFiles.length} ảnh đã chọn` : '0 ảnh';
+  };
+
+  const syncFilesToInput = () => {
+    if (!fileInput) return;
+
+    const dataTransfer = new DataTransfer();
+    selectedFiles.forEach((file) => dataTransfer.items.add(file));
+    fileInput.files = dataTransfer.files;
+  };
+
+  const clearObjectUrls = (files = selectedFiles) => {
+    files.forEach((file) => {
+      const url = objectUrlMap.get(file);
+      if (url) URL.revokeObjectURL(url);
+    });
+  };
+
+  const setDropzoneState = (active) => {
+    isDropActive = active;
+    if (!dropzone) return;
+    dropzone.classList.toggle('is-dragover', active);
+  };
+
+  const addFiles = (incomingFiles) => {
+    const nextFiles = [...selectedFiles];
+    incomingFiles.forEach((file) => {
+      const exists = nextFiles.some(
+        (current) =>
+          current.name === file.name &&
+          current.size === file.size &&
+          current.lastModified === file.lastModified
+      );
+      if (!exists) nextFiles.push(file);
+    });
+
+    selectedFiles = nextFiles;
+    syncFilesToInput();
+    renderPreview(selectedFiles);
+  };
+
+  const removeFileAt = (index) => {
+    const removed = selectedFiles[index];
+    const nextFiles = selectedFiles.filter((_, currentIndex) => currentIndex !== index);
+    if (removed) clearObjectUrls([removed]);
+    selectedFiles = nextFiles;
+    syncFilesToInput();
+    renderPreview(selectedFiles);
   };
 
   const initPriceSlider = () => {
@@ -53,14 +112,38 @@
 
   const renderPreview = (files) => {
     if (!preview) return;
+
     if (!files.length) {
       preview.innerHTML = '';
+      updateImageCount();
       return;
     }
 
     preview.innerHTML = files
-      .map((file) => `<img src="${URL.createObjectURL(file)}" alt="${file.name}">`)
+      .map((file, index) => {
+        const objectUrl = objectUrlMap.get(file) || URL.createObjectURL(file);
+        objectUrlMap.set(file, objectUrl);
+
+        return `
+          <article class="preview-card">
+            <img src="${objectUrl}" alt="${file.name}">
+            <div class="preview-card-body">
+              <strong title="${file.name}">${file.name}</strong>
+              <span>${Math.max(1, Math.round(file.size / 1024))} KB</span>
+              <button type="button" class="btn btn-outline preview-remove-btn" data-remove-index="${index}">Xóa ảnh</button>
+            </div>
+          </article>
+        `;
+      })
       .join('');
+
+    updateImageCount();
+
+    preview.querySelectorAll('[data-remove-index]').forEach((button) => {
+      button.addEventListener('click', () => {
+        removeFileAt(Number(button.dataset.removeIndex));
+      });
+    });
   };
 
   const validatePayload = (payload, files) => {
@@ -106,8 +189,45 @@
     const fileInput = form.querySelector('input[name="images"]');
     if (fileInput) {
       fileInput.addEventListener('change', () => {
-        const files = Array.from(fileInput.files || []);
-        renderPreview(files);
+        addFiles(Array.from(fileInput.files || []));
+      });
+    }
+
+    if (dropzone) {
+      dropzone.addEventListener('click', (event) => {
+        if (event.target === fileInput) return;
+        fileInput?.click();
+      });
+
+      dropzone.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          fileInput?.click();
+        }
+      });
+
+      dropzone.addEventListener('dragenter', (event) => {
+        event.preventDefault();
+        setDropzoneState(true);
+      });
+
+      dropzone.addEventListener('dragover', (event) => {
+        event.preventDefault();
+        if (!isDropActive) setDropzoneState(true);
+      });
+
+      dropzone.addEventListener('dragleave', (event) => {
+        event.preventDefault();
+        if (event.target === dropzone) setDropzoneState(false);
+      });
+
+      dropzone.addEventListener('drop', (event) => {
+        event.preventDefault();
+        setDropzoneState(false);
+        const droppedFiles = Array.from(event.dataTransfer?.files || []).filter((file) =>
+          file.type.startsWith('image/')
+        );
+        addFiles(droppedFiles);
       });
     }
 
@@ -142,11 +262,17 @@
         const created = await ApiService.createListing(payload, files);
         showMessage(`Đăng tin thành công với mã phòng #${created.id}.`, 'success');
         form.reset();
+        clearObjectUrls();
+        selectedFiles = [];
+        syncFilesToInput();
         renderPreview([]);
+        setDropzoneState(false);
       } catch (error) {
         showMessage(error.message || 'Không thể đăng tin lúc này.', 'error');
       }
     });
+
+    updateImageCount();
   };
 
   init();

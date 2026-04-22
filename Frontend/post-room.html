@@ -27,13 +27,20 @@
 
   <main class="main">
     <div class="container page-enter">
-      <section class="card zoom-hover">
+      <section class="card zoom-hover post-room-card">
         <h1 class="section-title">Đăng tin cho thuê phòng</h1>
-        <p class="section-subtitle">Vui lòng nhập đầy đủ thông tin phòng và ảnh từng phòng trước khi đăng.</p>
+        <p class="section-subtitle">Vui lòng nhập đầy đủ thông tin phòng và ảnh từng phòng trước khi đăng. Các mục quan trọng đã được sắp xếp theo từng nhóm để dễ nhập hơn.</p>
         <br>
         <p id="postMessage" hidden></p>
 
         <form id="postRoomForm" class="form-grid">
+          <div class="field full form-section">
+            <div class="form-section-head">
+              <h2>Thông tin cơ bản</h2>
+              <span>Tiêu đề, địa chỉ và vị trí hiển thị</span>
+            </div>
+          </div>
+
           <div class="field full">
             <label for="title">Tiêu đề tin đăng</label>
             <input id="title" name="title" type="text" required placeholder="Ví dụ: Phòng full nội thất gần trung tâm">
@@ -55,7 +62,14 @@
 
           <div class="field full">
             <label for="mapAddress">Địa chỉ để hiển thị Google Maps</label>
-            <input id="mapAddress" name="mapAddress" type="text" required>
+            <input id="mapAddress" name="mapAddress" type="text" required placeholder="Ví dụ: 123 Nguyễn Trãi, Thanh Xuân, Hà Nội">
+          </div>
+
+          <div class="field full form-section">
+            <div class="form-section-head">
+              <h2>Giá và diện tích</h2>
+              <span>Người thuê nhìn thấy trước tiên</span>
+            </div>
           </div>
 
           <div class="field">
@@ -77,7 +91,7 @@
 
           <div class="field">
             <label for="area">Diện tích (m2)</label>
-            <input id="area" name="area" type="number" min="1" required>
+            <input id="area" name="area" type="number" min="1" inputmode="numeric" placeholder="Ví dụ: 25" required>
           </div>
           <div class="field">
             <label for="direction">Hướng nhà</label>
@@ -94,41 +108,74 @@
             </select>
           </div>
 
+          <div class="field full form-section">
+            <div class="form-section-head">
+              <h2>Số lượng phòng</h2>
+              <span>Cho biết nhanh cấu trúc căn phòng</span>
+            </div>
+          </div>
+
           <div class="field">
             <label for="bedrooms">Số phòng ngủ</label>
-            <input id="bedrooms" name="bedrooms" type="number" min="0" required>
+            <input id="bedrooms" name="bedrooms" type="number" min="0" inputmode="numeric" placeholder="0" required>
           </div>
           <div class="field">
             <label for="bathrooms">Số phòng tắm</label>
-            <input id="bathrooms" name="bathrooms" type="number" min="0" required>
+            <input id="bathrooms" name="bathrooms" type="number" min="0" inputmode="numeric" placeholder="0" required>
           </div>
 
           <div class="field full">
             <label for="description">Mô tả chung</label>
-            <textarea id="description" name="description" required placeholder="Mô tả chi tiết tiện ích, nội thất, quy định..."></textarea>
+            <textarea id="description" name="description" required placeholder="Mô tả chi tiết tiện ích, nội thất, quy định, giờ giấc, tiền điện nước..."></textarea>
+          </div>
+
+          <div class="field full form-section">
+            <div class="form-section-head">
+              <h2>Thông tin liên hệ</h2>
+              <span>Để người thuê liên hệ nhanh</span>
+            </div>
           </div>
 
           <div class="field">
             <label for="contactName">Tên người liên hệ</label>
-            <input id="contactName" name="contactName" type="text" required>
+            <input id="contactName" name="contactName" type="text" required placeholder="Ví dụ: Anh Minh">
           </div>
           <div class="field">
             <label for="contactPhone">Số điện thoại liên hệ</label>
-            <input id="contactPhone" name="contactPhone" type="tel" required>
+            <input id="contactPhone" name="contactPhone" type="tel" inputmode="tel" required placeholder="Ví dụ: 0909 123 456">
           </div>
 
           <div class="field full">
             <label for="contactEmail">Email liên hệ</label>
-            <input id="contactEmail" name="contactEmail" type="email" required>
+            <input id="contactEmail" name="contactEmail" type="email" autocomplete="email" required placeholder="Ví dụ: lienhe@troxinh.vn">
+          </div>
+
+          <div class="field full form-section">
+            <div class="form-section-head">
+              <h2>Ảnh phòng</h2>
+              <span>Chọn nhiều ảnh và xem từng ảnh ngay bên dưới</span>
+            </div>
           </div>
 
           <div class="field full">
             <label for="images">Ảnh từng phòng (chọn nhiều ảnh)</label>
-            <input id="images" name="images" type="file" accept="image/*" multiple required>
+            <p class="field-help">Bạn có thể chọn nhiều ảnh cùng lúc. Ảnh sẽ hiện dạng thẻ để dễ kiểm tra trước khi đăng.</p>
+            <div id="dropzone" class="dropzone" tabindex="0" role="button" aria-label="Kéo thả hoặc chọn ảnh phòng">
+              <input id="images" name="images" type="file" accept="image/*" multiple required>
+              <div class="dropzone-content">
+                <strong>Kéo thả ảnh vào đây</strong>
+                <span>Hoặc bấm để chọn nhiều ảnh cùng lúc</span>
+                <small>Hỗ trợ JPG, PNG, WEBP. Có thể thêm từng ảnh một hoặc chọn nhiều ảnh ngay từ máy.</small>
+              </div>
+            </div>
           </div>
 
           <div class="field full">
-            <div id="imagePreview" class="file-preview"></div>
+            <div class="preview-summary">
+              <strong>Ảnh đã chọn</strong>
+              <span id="imageCount">0 ảnh</span>
+            </div>
+            <div id="imagePreview" class="file-preview file-preview-large"></div>
           </div>
 
           <div class="field full">

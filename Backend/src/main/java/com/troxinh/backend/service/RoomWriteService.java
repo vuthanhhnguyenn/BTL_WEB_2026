@@ -15,6 +15,12 @@ import com.troxinh.backend.repository.RoomRepository;
 import com.troxinh.backend.repository.UserRepository;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.nio.file.Paths;
+import java.util.UUID;
 import java.util.ArrayList;
 import java.util.List;
 import org.springframework.http.HttpStatus;
@@ -25,8 +31,9 @@ import org.springframework.web.server.ResponseStatusException;
 @Service
 public class RoomWriteService {
 
-    private static final String DEFAULT_STATUS = "AVAILABLE";
+    private static final String DEFAULT_STATUS = "PENDING";
     private static final String FALLBACK_IMAGE = "https://placehold.co/1200x800?text=No+Image";
+    private final Path uploadRoot;
 
     private final RoomRepository roomRepository;
     private final RoomImageRepository roomImageRepository;
@@ -39,13 +46,15 @@ public class RoomWriteService {
         RoomImageRepository roomImageRepository,
         RoomContactRepository roomContactRepository,
         UserRepository userRepository,
-        JwtService jwtService
+        JwtService jwtService,
+        org.springframework.core.env.Environment environment
     ) {
         this.roomRepository = roomRepository;
         this.roomImageRepository = roomImageRepository;
         this.roomContactRepository = roomContactRepository;
         this.userRepository = userRepository;
         this.jwtService = jwtService;
+        this.uploadRoot = resolveUploadRoot(environment);
     }
 
     public RoomDetailResponse createRoom(RoomCreateRequest request, List<MultipartFile> images, String authorizationHeader) {
@@ -75,26 +84,10 @@ public class RoomWriteService {
 
         Room savedRoom = roomRepository.save(room);
 
-        List<String> imageUrls = saveImages(savedRoom, images);
-        RoomContactResponse contact = saveContact(savedRoom, request.contact());
+        saveImages(savedRoom, images);
+        saveContact(savedRoom, request.contact());
 
-        return new RoomDetailResponse(
-            savedRoom.getId(),
-            savedRoom.getTitle(),
-            savedRoom.getAddress(),
-            savedRoom.getDistrict(),
-            savedRoom.getCity(),
-            savedRoom.getMapAddress(),
-            savedRoom.getPriceFrom(),
-            savedRoom.getPriceTo(),
-            savedRoom.getArea(),
-            savedRoom.getDirection(),
-            savedRoom.getBedrooms(),
-            savedRoom.getBathrooms(),
-            savedRoom.getDescription(),
-            imageUrls,
-            contact
-        );
+        return buildDetailResponse(savedRoom.getId());
     }
 
     private User resolveOwner(String authorizationHeader) {
@@ -129,6 +122,12 @@ public class RoomWriteService {
         List<String> imageUrls = new ArrayList<>();
         List<MultipartFile> safeImages = images == null ? List.of() : images;
 
+        try {
+            Files.createDirectories(uploadRoot);
+        } catch (IOException e) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Could not create upload directory", e);
+        }
+
         int sortOrder = 0;
         for (MultipartFile image : safeImages) {
             if (image == null || image.isEmpty()) {
@@ -138,7 +137,7 @@ public class RoomWriteService {
             RoomImage roomImage = new RoomImage();
             roomImage.setRoom(room);
             roomImage.setSortOrder(sortOrder++);
-            roomImage.setImageUrl(toPlaceholderImageUrl(image.getOriginalFilename()));
+            roomImage.setImageUrl(storeFileAndBuildUrl(image));
             roomImageRepository.save(roomImage);
             imageUrls.add(roomImage.getImageUrl());
         }
@@ -170,11 +169,12 @@ public class RoomWriteService {
         );
     }
 
-    public RoomDetailResponse updateRoom(Long roomId, RoomUpdateRequest request, Long userId) {
+    public RoomDetailResponse updateRoom(Long roomId, RoomUpdateRequest request, List<MultipartFile> images, Long userId, String authorizationHeader) {
         Room room = roomRepository.findById(roomId)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Room not found"));
 
-        if (!room.getUser().getId().equals(userId)) {
+        boolean isAdmin = isAdmin(authorizationHeader);
+        if (!isAdmin && (userId == null || !room.getUser().getId().equals(userId))) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You can only update your own rooms");
         }
 
@@ -200,7 +200,20 @@ public class RoomWriteService {
 
         Room savedRoom = roomRepository.save(room);
 
-        RoomContactResponse contact = updateContact(savedRoom, request.contact());
+        updateContact(savedRoom, request.contact());
+
+        if (images != null && !images.isEmpty()) {
+            deleteRoomFiles(roomId);
+            roomImageRepository.deleteAll(roomImageRepository.findByRoomIdOrderBySortOrderAscIdAsc(roomId));
+            saveImages(savedRoom, images);
+        }
+
+        return buildDetailResponse(savedRoom.getId());
+    }
+
+    private RoomDetailResponse buildDetailResponse(Long roomId) {
+        Room room = roomRepository.findById(roomId)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Room not found"));
 
         List<String> images = roomImageRepository.findByRoomIdOrderBySortOrderAscIdAsc(roomId)
             .stream()
@@ -212,20 +225,25 @@ public class RoomWriteService {
             images = List.of(FALLBACK_IMAGE);
         }
 
+        RoomContactResponse contact = roomContactRepository.findByRoomId(roomId)
+            .map(c -> new RoomContactResponse(c.getContactName(), c.getContactPhone(), c.getContactEmail()))
+            .orElseGet(() -> new RoomContactResponse("", "", ""));
+
         return new RoomDetailResponse(
-            savedRoom.getId(),
-            savedRoom.getTitle(),
-            savedRoom.getAddress(),
-            savedRoom.getDistrict(),
-            savedRoom.getCity(),
-            savedRoom.getMapAddress(),
-            savedRoom.getPriceFrom(),
-            savedRoom.getPriceTo(),
-            savedRoom.getArea(),
-            savedRoom.getDirection(),
-            savedRoom.getBedrooms(),
-            savedRoom.getBathrooms(),
-            savedRoom.getDescription(),
+            room.getId(),
+            room.getTitle(),
+            room.getAddress(),
+            room.getDistrict(),
+            room.getCity(),
+            room.getMapAddress(),
+            room.getPriceFrom(),
+            room.getPriceTo(),
+            room.getArea(),
+            room.getDirection(),
+            room.getBedrooms(),
+            room.getBathrooms(),
+            room.getDescription(),
+            room.getStatus(),
             images,
             contact
         );
@@ -251,15 +269,17 @@ public class RoomWriteService {
         );
     }
 
-    public void deleteRoom(Long roomId, Long userId) {
+    public void deleteRoom(Long roomId, Long userId, String authorizationHeader) {
         Room room = roomRepository.findById(roomId)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Room not found"));
 
-        if (!room.getUser().getId().equals(userId)) {
+        boolean isAdmin = isAdmin(authorizationHeader);
+        if (!isAdmin && (userId == null || !room.getUser().getId().equals(userId))) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You can only delete your own rooms");
         }
 
         roomImageRepository.deleteAll(roomImageRepository.findByRoomIdOrderBySortOrderAscIdAsc(roomId));
+        deleteRoomFiles(roomId);
         roomContactRepository.deleteAll(roomContactRepository.findAll().stream()
             .filter(c -> c.getRoom().getId().equals(roomId))
             .toList());
@@ -272,17 +292,106 @@ public class RoomWriteService {
         return extractUserId(authorizationHeader);
     }
 
-    private String toPlaceholderImageUrl(String originalFilename) {
-        String label = normalize(originalFilename);
-        if (label.isBlank()) {
-            label = "Room+Image";
-        } else {
-            label = URLEncoder.encode(label, StandardCharsets.UTF_8);
+    public String getRoleFromToken(String authorizationHeader) {
+        if (authorizationHeader == null || authorizationHeader.isBlank()) {
+            return null;
         }
-        return "https://placehold.co/1200x800?text=" + label;
+        try {
+            if (authorizationHeader.startsWith("Bearer ")) {
+                String token = authorizationHeader.substring(7);
+                if (jwtService.validateToken(token)) {
+                    return jwtService.parseToken(token).get("role", String.class);
+                }
+            }
+        } catch (Exception e) {
+            return null;
+        }
+        return null;
+    }
+
+    public boolean isAdmin(String authorizationHeader) {
+        String role = getRoleFromToken(authorizationHeader);
+        return role != null && role.equalsIgnoreCase("ADMIN");
+    }
+
+    private String storeFileAndBuildUrl(MultipartFile image) {
+        String originalFilename = normalize(image.getOriginalFilename());
+        String extension = getExtension(originalFilename);
+        if (extension.isBlank()) {
+            String contentType = image.getContentType();
+            extension = guessExtension(contentType);
+        }
+        if (extension.isBlank()) {
+            extension = ".jpg";
+        }
+
+        String fileName = UUID.randomUUID() + extension;
+        Path target = uploadRoot.resolve(fileName).normalize();
+        if (!target.startsWith(uploadRoot)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid upload path");
+        }
+
+        try {
+            Files.copy(image.getInputStream(), target, StandardCopyOption.REPLACE_EXISTING);
+        } catch (IOException e) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Could not save uploaded image", e);
+        }
+
+        return "/uploads/" + fileName;
+    }
+
+    private void deleteRoomFiles(Long roomId) {
+        roomImageRepository.findByRoomIdOrderBySortOrderAscIdAsc(roomId).forEach(roomImage -> {
+            String imageUrl = roomImage.getImageUrl();
+            if (imageUrl == null || imageUrl.isBlank() || imageUrl.startsWith("http")) {
+                return;
+            }
+            if (imageUrl.startsWith("/uploads/")) {
+                Path filePath = uploadRoot.resolve(imageUrl.substring("/uploads/".length())).normalize();
+                if (filePath.startsWith(uploadRoot)) {
+                    try {
+                        Files.deleteIfExists(filePath);
+                    } catch (IOException ignored) {
+                        // Best-effort cleanup.
+                    }
+                }
+            }
+        });
+    }
+
+    private String getExtension(String filename) {
+        if (filename == null || filename.isBlank()) return "";
+        int dot = filename.lastIndexOf('.');
+        return dot >= 0 ? filename.substring(dot) : "";
+    }
+
+    private String guessExtension(String contentType) {
+        if (contentType == null) return "";
+        return switch (contentType.toLowerCase()) {
+            case "image/jpeg" -> ".jpg";
+            case "image/png" -> ".png";
+            case "image/webp" -> ".webp";
+            case "image/gif" -> ".gif";
+            default -> "";
+        };
     }
 
     private String normalize(String value) {
         return value == null ? "" : value.trim();
+    }
+
+    private Path resolveUploadRoot(org.springframework.core.env.Environment environment) {
+        String configured = environment.getProperty("app.upload-dir", "uploads");
+        Path cwd = Paths.get(System.getProperty("user.dir")).toAbsolutePath().normalize();
+
+        Path candidate = cwd.resolve(configured).normalize();
+        if (Files.exists(cwd.resolve("Backend"))) {
+            candidate = cwd.resolve("Backend").resolve(configured).normalize();
+        } else if (!"Backend".equalsIgnoreCase(cwd.getFileName() == null ? "" : cwd.getFileName().toString())
+            && Files.exists(cwd.resolve("uploads"))) {
+            candidate = cwd.resolve("uploads").normalize();
+        }
+
+        return candidate;
     }
 }

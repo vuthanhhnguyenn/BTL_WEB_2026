@@ -1,5 +1,7 @@
 D:\BTL_WEB_2026\Backend\src\main\java\com\troxinh\backend\BackendApplication.java
+D:\BTL_WEB_2026\Backend\src\main\java\com\troxinh\backend\config\AdminSeeder.java
 D:\BTL_WEB_2026\Backend\src\main\java\com\troxinh\backend\config\CorsConfig.java
+D:\BTL_WEB_2026\Backend\src\main\java\com\troxinh\backend\config\StaticResourceConfig.java
 D:\BTL_WEB_2026\Backend\src\main\java\com\troxinh\backend\controller\AuthController.java
 D:\BTL_WEB_2026\Backend\src\main\java\com\troxinh\backend\controller\RoomController.java
 D:\BTL_WEB_2026\Backend\src\main\java\com\troxinh\backend\controller\UserController.java

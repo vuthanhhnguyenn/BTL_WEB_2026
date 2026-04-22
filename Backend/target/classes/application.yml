@@ -1,4 +1,9 @@
 spring:
+  servlet:
+    multipart:
+      max-file-size: 10MB      # Giới hạn dung lượng cho 1 file
+      max-request-size: 100MB   # Giới hạn tổng dung lượng cho một lần gửi (có thể gồm nhiều file)
+      enabled: true
   application:
     name: troxinh-db
 
@@ -25,3 +30,4 @@ app:
   jwt:
     secret: TroXinh2026SecretKeyForJWTTokenGenerationAndValidation123456789
     expiration: 86400000
+  upload-dir: ${UPLOAD_DIR:uploads}

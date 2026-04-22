@@ -13,6 +13,7 @@ public interface RoomRepository extends JpaRepository<Room, Long> {
     List<Room> findTop12ByOrderByIdAsc();
 
     List<Room> findByUserIdOrderByCreatedAtDesc(Long userId);
+    List<Room> findByStatusIgnoreCaseOrderByCreatedAtDesc(String status);
 
     @Query("""
     SELECT r FROM Room r
@@ -22,6 +23,7 @@ public interface RoomRepository extends JpaRepository<Room, Long> {
     AND (:district IS NULL OR LOWER(r.district) LIKE LOWER(CONCAT('%', :district, '%')))
     AND (:minPrice IS NULL OR r.priceTo >= :minPrice)
     AND (:maxPrice IS NULL OR r.priceFrom <= :maxPrice)
+    AND (UPPER(COALESCE(r.status, 'APPROVED')) IN ('APPROVED', 'AVAILABLE'))
     ORDER BY r.id DESC
     """)
     List<Room> searchRooms(

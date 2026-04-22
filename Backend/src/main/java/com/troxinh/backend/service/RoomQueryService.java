@@ -41,6 +41,12 @@ public class RoomQueryService {
         return new RoomSearchResponse(items, items.size());
     }
 
+    public RoomSearchResponse getAllRoomsForAdmin() {
+        List<Room> rooms = roomRepository.findByStatusIgnoreCaseOrderByCreatedAtDesc("PENDING");
+        List<RoomDetailResponse> items = rooms.stream().map(this::toRoomDetailResponse).toList();
+        return new RoomSearchResponse(items, items.size());
+    }
+
     public RoomSearchResponse getInitialRooms(int limit) {
         int safeLimit = limit > 0 ? limit : 5;
         List<Room> rooms = roomRepository
@@ -96,6 +102,7 @@ public class RoomQueryService {
             room.getBedrooms() == null ? 0 : room.getBedrooms(),
             room.getBathrooms() == null ? 0 : room.getBathrooms(),
             safe(room.getDescription()),
+            safe(room.getStatus()),
             images,
             contact
         );

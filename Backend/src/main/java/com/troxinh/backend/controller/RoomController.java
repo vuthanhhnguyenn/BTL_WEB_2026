@@ -24,6 +24,7 @@ import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.multipart.MultipartFile;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/rooms")
@@ -77,6 +78,14 @@ public class RoomController {
         return roomQueryService.getRoomsByUserId(userId);
     }
 
+    @GetMapping("/admin/all")
+    public RoomSearchResponse getAllRoomsForAdmin(@RequestHeader(value = "Authorization", required = false) String authorizationHeader) {
+        if (!roomWriteService.isAdmin(authorizationHeader)) {
+            throw new org.springframework.web.server.ResponseStatusException(HttpStatus.FORBIDDEN, "Admin access required");
+        }
+        return roomQueryService.getAllRoomsForAdmin();
+    }
+
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<RoomDetailResponse> createRoom(
         @Valid @RequestPart("data") RoomCreateRequest request,
@@ -95,7 +104,21 @@ public class RoomController {
         @RequestHeader(value = "Authorization", required = false) String authorizationHeader
     ) {
         Long userId = roomWriteService.getUserIdFromToken(authorizationHeader);
-        return ResponseEntity.ok(roomWriteService.updateRoom(id, request, userId));
+        return ResponseEntity.ok(roomWriteService.updateRoom(id, request, images, userId, authorizationHeader));
+    }
+
+    @PutMapping("/{id}/status")
+    public ResponseEntity<Map<String, Object>> updateRoomStatus(
+        @PathVariable Long id,
+        @RequestBody Map<String, String> body,
+        @RequestHeader(value = "Authorization", required = false) String authorizationHeader
+    ) {
+        if (!roomWriteService.isAdmin(authorizationHeader)) {
+            throw new org.springframework.web.server.ResponseStatusException(HttpStatus.FORBIDDEN, "Admin access required");
+        }
+        String status = body.get("status");
+        roomDetailService.updateStatus(id, status);
+        return ResponseEntity.ok(Map.of("success", true, "message", "Room status updated"));
     }
 
     @DeleteMapping("/{id}")
@@ -104,7 +127,11 @@ public class RoomController {
         @RequestHeader(value = "Authorization", required = false) String authorizationHeader
     ) {
         Long userId = roomWriteService.getUserIdFromToken(authorizationHeader);
-        roomWriteService.deleteRoom(id, userId);
+        if (roomWriteService.isAdmin(authorizationHeader)) {
+            roomDetailService.deleteRoomAsAdmin(id);
+        } else {
+            roomWriteService.deleteRoom(id, userId, authorizationHeader);
+        }
         return ResponseEntity.noContent().build();
     }
 }

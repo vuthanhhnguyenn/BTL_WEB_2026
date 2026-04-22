@@ -4,6 +4,13 @@
   const formatCurrency = (value) =>
     new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }).format(value);
 
+  const resolveImageUrl = (url) => {
+    if (!url) return url;
+    if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:')) return url;
+    const base = API_BASE_URL.replace(/\/api\/v1$/, '');
+    return `${base}${url.startsWith('/') ? '' : '/'}${url}`;
+  };
+
   const getLocalRooms = () => {
     const raw = localStorage.getItem(STORAGE_KEYS.ROOMS);
     if (!raw) return [];
@@ -17,6 +24,19 @@
   const setLocalRooms = (rooms) => localStorage.setItem(STORAGE_KEYS.ROOMS, JSON.stringify(rooms));
 
   const getAllMockRooms = () => [...window.DEMO_ROOMS, ...getLocalRooms()];
+
+  const normalizeRoomImages = (room) => {
+    if (!room || !Array.isArray(room.images)) return room;
+    return { ...room, images: room.images.map(resolveImageUrl) };
+  };
+
+  const normalizeRoomPage = (data) => {
+    if (!data || !Array.isArray(data.content)) return data;
+    return {
+      ...data,
+      content: data.content.map(normalizeRoomImages)
+    };
+  };
 
   const filterRooms = (rooms, params = {}) => {
     const keyword = (params.keyword || '').toLowerCase().trim();
@@ -75,14 +95,14 @@
   const getRooms = async (params = {}) => {
     if (USE_MOCK) {
       const rooms = filterRooms(getAllMockRooms(), params);
-      return { content: rooms, totalElements: rooms.length };
+      return normalizeRoomPage({ content: rooms, totalElements: rooms.length });
     }
 
     const query = new URLSearchParams();
     Object.entries(params).forEach(([key, value]) => {
       if (value !== undefined && value !== null && value !== '') query.set(key, value);
     });
-    return request(`/rooms/search?${query.toString()}`);
+    return request(`/rooms/search?${query.toString()}`).then(normalizeRoomPage);
   };
 
   const getInitialRooms = async (limit = 5) => {
@@ -91,16 +111,16 @@
         .slice()
         .sort((a, b) => Number(a.id) - Number(b.id))
         .slice(0, limit);
-      return { content: rooms, totalElements: rooms.length };
+      return normalizeRoomPage({ content: rooms, totalElements: rooms.length });
     }
-    return request(`/rooms/initial?limit=${Number(limit) || 5}`);
+    return request(`/rooms/initial?limit=${Number(limit) || 5}`).then(normalizeRoomPage);
   };
 
   const getRoomById = async (id) => {
     if (USE_MOCK) {
-      return getAllMockRooms().find((room) => Number(room.id) === Number(id)) || null;
+      return normalizeRoomImages(getAllMockRooms().find((room) => Number(room.id) === Number(id)) || null);
     }
-    return request(`/rooms/${id}`);
+    return request(`/rooms/${id}`).then(normalizeRoomImages);
   };
 
   const login = async ({ email, password }) => {
@@ -159,11 +179,12 @@
       const newRoom = {
         ...roomPayload,
         id: nextId,
+        status: 'PENDING',
         images: previewImages
       };
       localRooms.push(newRoom);
       setLocalRooms(localRooms);
-      return newRoom;
+      return normalizeRoomImages(newRoom);
     }
 
     const formData = new FormData();
@@ -261,9 +282,9 @@
         return { content: [], totalElements: 0 };
       }
       const localRooms = getLocalRooms().filter(room => room.userId === currentUser.id);
-      return { content: localRooms, totalElements: localRooms.length };
+      return normalizeRoomPage({ content: localRooms, totalElements: localRooms.length });
     }
-    return request('/rooms/my', { auth: true });
+    return request('/rooms/my', { auth: true }).then(normalizeRoomPage);
   };
 
   const updateRoom = async (id, roomPayload, imageFiles = []) => {
@@ -283,7 +304,7 @@
       };
       localRooms[index] = updatedRoom;
       setLocalRooms(localRooms);
-      return updatedRoom;
+      return normalizeRoomImages(updatedRoom);
     }
 
     const formData = new FormData();
@@ -309,6 +330,32 @@
     return request(`/rooms/${id}`, { method: 'DELETE', auth: true });
   };
 
+  const getAllRoomsForAdmin = async () => {
+    if (USE_MOCK) {
+      return { content: getAllMockRooms(), totalElements: getAllMockRooms().length };
+    }
+    return request('/rooms/admin/all', { auth: true }).then(normalizeRoomPage);
+  };
+
+  const updateRoomStatus = async (id, status) => {
+    if (USE_MOCK) {
+      const localRooms = getLocalRooms();
+      const index = localRooms.findIndex((room) => Number(room.id) === Number(id));
+      if (index !== -1) {
+        localRooms[index] = { ...localRooms[index], status };
+        setLocalRooms(localRooms);
+      }
+      return { success: true };
+    }
+    return request(`/rooms/${id}/status`, {
+      method: 'PUT',
+      body: JSON.stringify({ status }),
+      auth: true
+    });
+  };
+
+  const isAdmin = () => (getCurrentUser()?.role || '').toUpperCase() === 'ADMIN';
+
   window.ApiService = {
     formatCurrency,
     getInitialRooms,
@@ -326,6 +373,9 @@
     changePassword,
     getMyRooms,
     updateRoom,
-    deleteRoom
+    deleteRoom,
+    getAllRoomsForAdmin,
+    updateRoomStatus,
+    isAdmin
   };
 })();

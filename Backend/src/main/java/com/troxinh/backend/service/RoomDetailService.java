@@ -62,9 +62,27 @@ public class RoomDetailService {
             room.getBedrooms() == null ? 0 : room.getBedrooms(),
             room.getBathrooms() == null ? 0 : room.getBathrooms(),
             orNotInDb(room.getDescription()),
+            orNotInDb(room.getStatus()),
             images,
             contact
         );
+    }
+
+    public void updateStatus(Long roomId, String status) {
+        Room room = roomRepository.findById(roomId)
+            .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Khong tim thay phong voi id=" + roomId));
+        room.setStatus(status == null ? room.getStatus() : status.trim().toUpperCase());
+        roomRepository.save(room);
+    }
+
+    public void deleteRoomAsAdmin(Long roomId) {
+        Room room = roomRepository.findById(roomId)
+            .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Khong tim thay phong voi id=" + roomId));
+        roomImageRepository.deleteAll(roomImageRepository.findByRoomIdOrderBySortOrderAscIdAsc(roomId));
+        roomContactRepository.deleteAll(roomContactRepository.findAll().stream()
+            .filter(c -> c.getRoom().getId().equals(roomId))
+            .toList());
+        roomRepository.delete(room);
     }
 
     private RoomContactResponse mapContact(Optional<RoomContact> contactOptional) {

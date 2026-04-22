@@ -16,8 +16,8 @@ import org.springframework.web.server.ResponseStatusException;
 @Service
 public class AuthService {
 
-    private static final String DEFAULT_ROLE = "Nguoi tim phong";
-    private static final Set<String> ALLOWED_ROLES = Set.of("Nguoi tim phong", "Chu tro", "Admin");
+    private static final String DEFAULT_ROLE = "USER";
+    private static final Set<String> ALLOWED_ROLES = Set.of("USER", "HOST", "ADMIN");
 
     private final UserRepository userRepository;
     private final JwtService jwtService;
@@ -113,7 +113,7 @@ public class AuthService {
         if (role == null || role.isBlank()) {
             return DEFAULT_ROLE;
         }
-        String normalized = role.trim();
+        String normalized = role.trim().toUpperCase();
         if (!ALLOWED_ROLES.contains(normalized)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid role");
         }

@@ -5,6 +5,7 @@
     'rooms.html': 'nav-rooms',
     'post-room.html': 'nav-post',
     'my-listings.html': 'nav-my-listings',
+    'admin.html': 'nav-admin',
     'edit-room.html': 'nav-my-listings',
     'about.html': 'nav-about',
     'login.html': 'nav-login',
@@ -19,6 +20,7 @@
 
   const loginLink = document.getElementById('nav-login');
   const profileLink = document.getElementById('nav-profile');
+  const nav = document.querySelector('.nav');
   const currentUser = window.ApiService?.getCurrentUser?.();
 
   if (currentUser) {
@@ -33,6 +35,18 @@
     if (myListingsLink) {
       myListingsLink.hidden = false;
     }
+    const adminLink = document.getElementById('nav-admin');
+    if (String(currentUser.role || '').toUpperCase() === 'ADMIN') {
+      let resolvedAdminLink = adminLink;
+      if (!resolvedAdminLink && nav) {
+        resolvedAdminLink = document.createElement('a');
+        resolvedAdminLink.id = 'nav-admin';
+        resolvedAdminLink.href = 'admin.html';
+        resolvedAdminLink.textContent = 'Quản trị';
+        nav.appendChild(resolvedAdminLink);
+      }
+      if (resolvedAdminLink) resolvedAdminLink.hidden = false;
+    }
   } else {
     if (loginLink) {
       loginLink.hidden = false;
@@ -42,6 +56,8 @@
     if (profileLink) {
       profileLink.hidden = true;
     }
+    const adminLink = document.getElementById('nav-admin');
+    if (adminLink) adminLink.hidden = true;
   }
 
   const yearNode = document.querySelector('[data-year]');

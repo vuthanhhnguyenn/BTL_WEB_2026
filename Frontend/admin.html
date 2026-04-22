@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quản trị bài đăng | TroXinh</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="container header-inner">
+      <a class="brand" href="index.html"><img class="brand-logo" src="assets/img/logo.png" alt="Logo TroXinh"><span>TroXinh.vn</span></a>
+      <nav class="nav">
+        <a id="nav-home" href="index.html">Trang chủ</a>
+        <a id="nav-rooms" href="rooms.html">Xem phòng trọ</a>
+        <a id="nav-post" href="post-room.html">Đăng tin</a>
+        <a id="nav-my-listings" href="my-listings.html" hidden>Tin của tôi</a>
+        <a id="nav-admin" href="admin.html" hidden>Quản trị</a>
+        <a id="nav-about" href="about.html">Giới thiệu</a>
+        <a id="nav-login" href="login.html">Đăng nhập</a>
+        <a id="nav-profile" href="profile.html" hidden>Thông tin cá nhân</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="main">
+    <div class="container page-enter">
+      <section class="card zoom-hover admin-hero">
+        <div>
+          <h1 class="section-title">Quản trị bài đăng</h1>
+          <p class="section-subtitle">Duyệt, từ chối, chỉnh trạng thái và xóa toàn bộ bài đăng của người dùng.</p>
+        </div>
+        <div class="admin-stats">
+          <div class="admin-stat"><strong id="totalRooms">0</strong><span>Tổng bài</span></div>
+          <div class="admin-stat"><strong id="pendingRooms">0</strong><span>Chờ duyệt</span></div>
+          <div class="admin-stat"><strong id="approvedRooms">0</strong><span>Đã duyệt</span></div>
+        </div>
+      </section>
+
+      <section style="margin-top: 18px;">
+        <p id="adminMessage" hidden></p>
+        <div id="adminRoomsGrid" class="room-grid"></div>
+      </section>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner footer-rich">
+      <div class="footer-block">
+        <strong>TroXinh.vn</strong>
+        <p>Nền tảng kết nối người thuê phòng và chủ trọ minh bạch, nhanh chóng.</p>
+        <span>© <span data-year></span> TroXinh.vn</span>
+      </div>
+      <div class="footer-block">
+        <strong>Liên hệ</strong>
+        <a href="tel:0909122233">Hotline: 0909 122 233</a>
+        <a href="mailto:lienhe@troxinh.vn">Email: lienhe@troxinh.vn</a>
+      </div>
+      <div class="footer-block">
+        <strong>Kết nối với chúng tôi</strong>
+        <div class="footer-social">
+          <a class="social-link" href="https://facebook.com" target="_blank" rel="noopener noreferrer" aria-label="Facebook">f</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script src="assets/js/config.js"></script>
+  <script src="assets/js/mock-data.js"></script>
+  <script src="assets/js/api.js"></script>
+  <script src="assets/js/layout.js"></script>
+  <script src="assets/js/admin.js"></script>
+</body>
+</html>
