@@ -10,8 +10,13 @@ import com.troxinh.backend.repository.RoomContactRepository;
 import com.troxinh.backend.repository.RoomImageRepository;
 import com.troxinh.backend.repository.RoomReportRepository;
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -38,55 +43,102 @@ public class RoomResponseMapper {
     }
 
     public RoomDetailResponse toRoomDetailResponse(Room room, Long currentUserId) {
-        List<String> images = roomImageRepository.findByRoomIdOrderBySortOrderAscIdAsc(room.getId())
-            .stream()
-            .map(RoomImage::getImageUrl)
-            .filter(this::hasText)
-            .toList();
+        return toRoomDetailResponses(List.of(room), currentUserId).get(0);
+    }
 
-        if (images.isEmpty()) {
-            images = List.of(FALLBACK_IMAGE);
+    public List<RoomDetailResponse> toRoomDetailResponses(List<Room> rooms, Long currentUserId) {
+        if (rooms.isEmpty()) {
+            return List.of();
         }
 
-        RoomContactResponse contact = mapContact(roomContactRepository.findByRoomId(room.getId()));
-        boolean favorited = currentUserId != null && favoriteRepository.existsByUserIdAndRoomId(currentUserId, room.getId());
+        List<Long> roomIds = rooms.stream()
+            .map(Room::getId)
+            .toList();
 
-        return new RoomDetailResponse(
-            room.getId(),
-            orNotInDb(room.getTitle()),
-            orNotInDb(room.getAddress()),
-            orNotInDb(room.getDistrict()),
-            orNotInDb(room.getCity()),
-            orNotInDb(room.getMapAddress()),
-            room.getPriceFrom() == null ? 0L : room.getPriceFrom(),
-            room.getPriceTo() == null ? 0L : room.getPriceTo(),
-            room.getArea() == null ? BigDecimal.ZERO : room.getArea(),
-            orNotInDb(room.getDirection()),
-            room.getBedrooms() == null ? 0 : room.getBedrooms(),
-            room.getBathrooms() == null ? 0 : room.getBathrooms(),
-            orNotInDb(room.getDescription()),
-            orNotInDb(room.getStatus()),
-            images,
-            contact,
-            Boolean.TRUE.equals(room.getIsFeatured()),
-            favorited,
-            room.getViewCount() == null ? 0 : room.getViewCount(),
-            room.getContactClickCount() == null ? 0 : room.getContactClickCount(),
-            favoriteRepository.countByRoomId(room.getId()),
-            roomReportRepository.countByRoomId(room.getId())
-        );
+        Map<Long, List<String>> imagesByRoomId = buildImagesByRoomId(roomIds);
+        Map<Long, RoomContactResponse> contactsByRoomId = buildContactsByRoomId(roomIds);
+        Map<Long, Long> favoriteCounts = toCountMap(favoriteRepository.countByRoomIds(roomIds));
+        Map<Long, Long> reportCounts = toCountMap(roomReportRepository.countByRoomIds(roomIds));
+        Set<Long> favoritedRoomIds = currentUserId == null
+            ? Collections.emptySet()
+            : favoriteRepository.findFavoritedRoomIds(currentUserId, roomIds);
+
+        return rooms.stream()
+            .map(room -> new RoomDetailResponse(
+                room.getId(),
+                orNotInDb(room.getTitle()),
+                orNotInDb(room.getAddress()),
+                orNotInDb(room.getDistrict()),
+                orNotInDb(room.getCity()),
+                orNotInDb(room.getMapAddress()),
+                room.getPriceFrom() == null ? 0L : room.getPriceFrom(),
+                room.getPriceTo() == null ? 0L : room.getPriceTo(),
+                room.getArea() == null ? BigDecimal.ZERO : room.getArea(),
+                orNotInDb(room.getDirection()),
+                room.getBedrooms() == null ? 0 : room.getBedrooms(),
+                room.getBathrooms() == null ? 0 : room.getBathrooms(),
+                orNotInDb(room.getDescription()),
+                orNotInDb(room.getStatus()),
+                imagesByRoomId.getOrDefault(room.getId(), List.of(FALLBACK_IMAGE)),
+                contactsByRoomId.getOrDefault(room.getId(), emptyContact()),
+                Boolean.TRUE.equals(room.getIsFeatured()),
+                favoritedRoomIds.contains(room.getId()),
+                room.getViewCount() == null ? 0 : room.getViewCount(),
+                room.getContactClickCount() == null ? 0 : room.getContactClickCount(),
+                favoriteCounts.getOrDefault(room.getId(), 0L),
+                reportCounts.getOrDefault(room.getId(), 0L)
+            ))
+            .toList();
+    }
+
+    private Map<Long, List<String>> buildImagesByRoomId(List<Long> roomIds) {
+        Map<Long, List<String>> imagesByRoomId = new HashMap<>();
+
+        for (RoomImage image : roomImageRepository.findAllByRoomIdsOrderByRoomIdAscSortOrderAscIdAsc(roomIds)) {
+            if (!hasText(image.getImageUrl())) {
+                continue;
+            }
+
+            imagesByRoomId.computeIfAbsent(image.getRoom().getId(), key -> new ArrayList<>())
+                .add(image.getImageUrl());
+        }
+
+        return imagesByRoomId;
+    }
+
+    private Map<Long, RoomContactResponse> buildContactsByRoomId(List<Long> roomIds) {
+        Map<Long, RoomContactResponse> contactsByRoomId = new HashMap<>();
+
+        for (RoomContact contact : roomContactRepository.findAllByRoomIds(roomIds)) {
+            contactsByRoomId.put(contact.getRoom().getId(), mapContact(contact));
+        }
+
+        return contactsByRoomId;
+    }
+
+    private Map<Long, Long> toCountMap(List<Object[]> rows) {
+        Map<Long, Long> counts = new HashMap<>();
+
+        for (Object[] row : rows) {
+            counts.put((Long) row[0], (Long) row[1]);
+        }
+
+        return counts;
     }
 
     private RoomContactResponse mapContact(Optional<RoomContact> contactOptional) {
-        if (contactOptional.isPresent()) {
-            RoomContact c = contactOptional.get();
-            return new RoomContactResponse(
-                orNotInDb(c.getContactName()),
-                orNotInDb(c.getContactPhone()),
-                orNotInDb(c.getContactEmail())
-            );
-        }
+        return contactOptional.map(this::mapContact).orElseGet(this::emptyContact);
+    }
 
+    private RoomContactResponse mapContact(RoomContact contact) {
+        return new RoomContactResponse(
+            orNotInDb(contact.getContactName()),
+            orNotInDb(contact.getContactPhone()),
+            orNotInDb(contact.getContactEmail())
+        );
+    }
+
+    private RoomContactResponse emptyContact() {
         return new RoomContactResponse(NOT_IN_DB, NOT_IN_DB, NOT_IN_DB);
     }
 

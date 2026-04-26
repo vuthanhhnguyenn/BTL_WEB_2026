@@ -82,22 +82,22 @@
     <article class="card room-card zoom-hover page-enter">
       <div class="room-card-image-wrap">
         <img src="${room.images[0]}" alt="${room.title}">
-          ${room.featured ? '<div class="room-card-status"><span class="featured-pill">Nổi bật</span></div>' : ''}
+        ${room.featured ? '<div class="room-card-status"><span class="featured-pill">Nổi bật</span></div>' : ''}
       </div>
       <div class="room-card-body">
         <div class="room-card-topline">
           <span class="badge">${room.city}</span>
-            <button class="btn btn-outline favorite-btn" type="button" data-id="${room.id}" data-favorited="${room.favorited ? 'true' : 'false'}">
-              ${room.favorited ? 'Bỏ lưu' : 'Yêu thích'}
-            </button>
+          <button class="btn btn-outline favorite-btn" type="button" data-id="${room.id}" data-favorited="${room.favorited ? 'true' : 'false'}">
+            ${room.favorited ? 'Bỏ lưu' : 'Yêu thích'}
+          </button>
         </div>
         <h3>${room.title}</h3>
         <div class="room-meta">${room.address}</div>
         <div class="room-price">${ApiService.formatCurrency(room.priceFrom)} - ${ApiService.formatCurrency(room.priceTo)}</div>
         <div class="room-meta">${room.area}m2 | ${room.bedrooms} PN | ${room.bathrooms} WC</div>
-          <div class="room-meta">${room.viewCount || 0} lượt xem | ${room.favoriteCount || 0} lượt lưu</div>
+        <div class="room-meta">${room.viewCount || 0} lượt xem | ${room.favoriteCount || 0} lượt lưu</div>
         <div class="room-card-actions">
-            <a class="btn btn-primary" href="room-detail.html?id=${room.id}">Xem chi tiết</a>
+          <a class="btn btn-primary" href="room-detail.html?id=${room.id}">Xem chi tiết</a>
         </div>
       </div>
     </article>
@@ -139,7 +139,7 @@
       if (resultInfo) {
         resultInfo.textContent = usingFilters
           ? `Tìm thấy ${total} phòng phù hợp`
-          : `Danh sách mặc định — ưu tiên tin nổi bật và bài đăng được quan tâm.`;
+          : 'Danh sách mặc định, ưu tiên tin nổi bật và bài đăng được quan tâm.';
       }
 
       if (!rooms.length) {

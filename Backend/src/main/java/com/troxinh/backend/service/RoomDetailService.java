@@ -28,6 +28,12 @@ public class RoomDetailService {
         return roomResponseMapper.toRoomDetailResponse(savedRoom, currentUserId);
     }
 
+    public RoomDetailResponse getRoomForEdit(Long id, Long currentUserId) {
+        Room room = roomRepository.findById(id)
+            .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Khong tim thay phong voi id=" + id));
+        return roomResponseMapper.toRoomDetailResponse(room, currentUserId);
+    }
+
     public void updateStatus(Long roomId, String status) {
         Room room = roomRepository.findById(roomId)
             .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Khong tim thay phong voi id=" + roomId));

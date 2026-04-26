@@ -28,7 +28,7 @@
     <div class="container page-enter">
       <section class="card zoom-hover">
         <h1 class="section-title">Sửa tin cho thuê phòng</h1>
-        <p class="section-subtitle">Cập nhật thông tin phòng và ảnh.</p>
+        <p class="section-subtitle">Cập nhật thông tin phòng và thay ảnh mới nếu cần. Khi chọn ảnh mới, bộ ảnh cũ sẽ được thay thế.</p>
         <br>
         <p id="editMessage" hidden></p>
 
@@ -130,18 +130,23 @@
             <input id="contactEmail" name="contactEmail" type="email" required>
           </div>
 
-          <div class="field full">
-            <label for="images">Ảnh mới (thêm ảnh)</label>
-            <input id="images" name="images" type="file" accept="image/*" multiple>
-          </div>
-
-          <div class="field full">
-            <div id="newImagePreview" class="file-preview"></div>
-          </div>
-
           <div class="field full" id="currentImagesContainer" hidden>
             <label>Ảnh hiện tại</label>
-            <div id="currentImages" class="file-preview"></div>
+            <p class="field-help">Đây là bộ ảnh đang hiển thị của bài đăng.</p>
+            <div id="currentImages" class="image-preview-grid image-preview-grid-static"></div>
+          </div>
+
+          <div class="field full">
+            <label for="images">Ảnh mới</label>
+            <p class="field-help">Chọn ảnh mới để thay toàn bộ ảnh cũ. Bạn có thể xóa từng ảnh đã chọn trước khi lưu.</p>
+            <input id="images" name="images" type="file" accept="image/*" multiple hidden>
+            <div class="preview-summary">
+              <strong>Ảnh mới đã chọn</strong>
+              <span id="newImageCount">0 ảnh</span>
+            </div>
+            <div id="editImagePicker" class="image-picker-grid" tabindex="0" role="button" aria-label="Chọn ảnh mới cho bài đăng">
+              <div id="newImagePreview" class="image-preview-grid"></div>
+            </div>
           </div>
 
           <div class="field full" style="display: flex; gap: 12px;">

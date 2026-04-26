@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quản trị báo cáo bài viết | TroXinh</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="container header-inner">
+      <a class="brand" href="index.html"><img class="brand-logo" src="assets/img/logo.png" alt="Logo TroXinh"><span>TroXinh.vn</span></a>
+      <nav class="nav">
+        <a id="nav-home" href="index.html">Trang chủ</a>
+        <a id="nav-rooms" href="rooms.html">Xem phòng trọ</a>
+        <a id="nav-post" href="post-room.html">Đăng tin</a>
+        <a id="nav-my-listings" href="my-listings.html" hidden>Tin của tôi</a>
+        <a id="nav-admin" href="admin.html" hidden>Quản trị</a>
+        <a id="nav-about" href="about.html">Giới thiệu</a>
+        <a id="nav-login" href="login.html">Đăng nhập</a>
+        <a id="nav-profile" href="profile.html" hidden>Thông tin cá nhân</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="main">
+    <div class="container page-enter">
+      <section class="card zoom-hover admin-hero">
+        <div>
+          <h1 class="section-title">Báo cáo bài viết</h1>
+          <p class="section-subtitle">Xem tất cả báo cáo ở một trang riêng và xử lý nhanh từng bài bị phản ánh.</p>
+        </div>
+      </section>
+
+      <section class="card zoom-hover" style="margin-top: 18px;">
+        <div class="section-head" style="margin-bottom: 12px; gap: 12px; flex-wrap: wrap;">
+          <div>
+            <h2 class="section-title" style="margin-bottom: 6px;">Khu vực quản trị</h2>
+            <p class="section-subtitle">Chuyển nhanh giữa quản lý bài đăng và quản lý báo cáo.</p>
+          </div>
+          <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <a class="btn btn-outline" href="admin.html">Bài đăng</a>
+            <a class="btn btn-primary" href="admin-reports.html">Báo cáo bài viết</a>
+          </div>
+        </div>
+      </section>
+
+      <section style="margin-top: 18px;">
+        <p id="adminReportsMessage" hidden></p>
+        <div id="adminReportsList" class="stack-list"></div>
+      </section>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner footer-rich">
+      <div class="footer-block">
+        <strong>TroXinh.vn</strong>
+        <p>Nền tảng kết nối người thuê phòng và chủ trọ minh bạch, nhanh chóng.</p>
+        <span>© <span data-year></span> TroXinh.vn</span>
+      </div>
+      <div class="footer-block">
+        <strong>Liên hệ</strong>
+        <a href="tel:0909122233">Hotline: 0909 122 233</a>
+        <a href="mailto:lienhe@troxinh.vn">Email: lienhe@troxinh.vn</a>
+      </div>
+      <div class="footer-block">
+        <strong>Kết nối với chúng tôi</strong>
+        <div class="footer-social">
+          <a class="social-link" href="https://facebook.com" target="_blank" rel="noopener noreferrer" aria-label="Facebook">f</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script src="assets/js/config.js"></script>
+  <script src="assets/js/mock-data.js"></script>
+  <script src="assets/js/api.js"></script>
+  <script src="assets/js/layout.js"></script>
+  <script src="assets/js/admin-reports.js"></script>
+</body>
+</html>

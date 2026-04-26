@@ -4,7 +4,10 @@
   const totalRoomsNode = document.getElementById('totalRooms');
   const pendingRoomsNode = document.getElementById('pendingRooms');
   const approvedRoomsNode = document.getElementById('approvedRooms');
-  const reportList = document.getElementById('reportList');
+  const filterButtons = Array.from(document.querySelectorAll('.admin-filter-btn'));
+
+  let allRooms = [];
+  let activeFilter = 'ALL';
 
   const showMessage = (message, type = 'success') => {
     if (!messageNode) return;
@@ -13,17 +16,35 @@
     messageNode.hidden = false;
   };
 
-  const formatDate = (value) => {
-    if (!value) return 'Không rõ';
-    return new Date(value).toLocaleString('vi-VN');
-  };
-
   const getBadge = (status) => {
     const value = String(status || '').toUpperCase();
     if (value === 'PENDING') return '<span class="badge badge-warning">Chờ duyệt</span>';
     if (value === 'APPROVED' || value === 'AVAILABLE') return '<span class="badge badge-success">Đã duyệt</span>';
     if (value === 'REJECTED') return '<span class="badge badge-danger">Từ chối</span>';
+    if (value === 'RENTED') return '<span class="badge badge-warning">Đã thuê</span>';
+    if (value === 'EXPIRED') return '<span class="badge badge-danger">Hết hạn</span>';
     return `<span class="badge">${value || 'Không rõ'}</span>`;
+  };
+
+  const isApprovedRoom = (room) => {
+    const status = String(room.status || '').toUpperCase();
+    return status === 'APPROVED' || status === 'AVAILABLE';
+  };
+
+  const isPendingRoom = (room) => String(room.status || '').toUpperCase() === 'PENDING';
+
+  const getFilteredRooms = () => {
+    if (activeFilter === 'APPROVED') return allRooms.filter(isApprovedRoom);
+    if (activeFilter === 'PENDING') return allRooms.filter(isPendingRoom);
+    return allRooms;
+  };
+
+  const updateFilterButtons = () => {
+    filterButtons.forEach((button) => {
+      const isActive = button.dataset.filter === activeFilter;
+      button.classList.toggle('btn-primary', isActive);
+      button.classList.toggle('btn-outline', !isActive);
+    });
   };
 
   const roomCardHtml = (room) => `
@@ -40,121 +61,94 @@
         <div class="room-meta">${room.area}m2 | ${room.favoriteCount || 0} yêu thích | ${room.reportCount || 0} báo cáo</div>
         <div class="room-card-actions">
           <a class="btn btn-outline" href="room-detail.html?id=${room.id}">Xem</a>
-          <button class="btn btn-primary approve-btn" data-id="${room.id}" data-status="APPROVED">Duyet</button>
-          <button class="btn btn-outline reject-btn" data-id="${room.id}" data-status="REJECTED">Tu choi</button>
+          <a class="btn btn-primary" href="edit-room.html?id=${room.id}">Sửa</a>
+          <button class="btn btn-primary approve-btn" data-id="${room.id}" data-status="APPROVED">Duyệt</button>
+          <button class="btn btn-outline reject-btn" data-id="${room.id}" data-status="REJECTED">Từ chối</button>
           <button class="btn btn-danger-outline delete-btn" data-id="${room.id}">Xóa</button>
         </div>
       </div>
     </article>
   `;
 
-  const reportItemHtml = (report) => `
-    <article class="stack-item">
-      <div class="stack-item-head">
-        <div>
-          <strong>${report.roomTitle || 'Bài đăng'}</strong>
-          <div class="stack-item-meta">Người báo cáo: ${report.reporterName || 'Không rõ'} | ${formatDate(report.createdAt)}</div>
-        </div>
-        <span class="badge ${String(report.status || '').toUpperCase() === 'OPEN' ? 'badge-warning' : 'badge-success'}">${report.status || 'OPEN'}</span>
-      </div>
-      <div><strong>Lý do:</strong> ${report.reason}</div>
-      <div class="stack-item-meta">${report.detail || 'Không có mô tả bổ sung.'}</div>
-      <div class="room-card-actions">
-        <a class="btn btn-outline" href="room-detail.html?id=${report.roomId}">Mở bài đăng</a>
-        <button class="btn btn-primary report-status-btn" type="button" data-id="${report.id}" data-status="REVIEWED">Đánh dấu đã xem</button>
-      </div>
-    </article>
-  `;
-
-  const renderReports = async () => {
-    if (!reportList) return;
-    reportList.innerHTML = '<p>Đang tải báo cáo...</p>';
-    try {
-      const reports = await ApiService.getAdminReports();
-      if (!reports.length) {
-        reportList.innerHTML = '<p class="message">Chưa có báo cáo nào.</p>';
-        return;
-      }
-
-      reportList.innerHTML = reports.map(reportItemHtml).join('');
-      reportList.querySelectorAll('.report-status-btn').forEach((button) => {
-        button.addEventListener('click', async () => {
-          try {
-            await ApiService.updateReportStatus(button.dataset.id, button.dataset.status);
-            showMessage('Đã cập nhật trạng thái báo cáo.', 'success');
-            renderReports();
-          } catch (error) {
-            showMessage(error.message || 'Không thể cập nhật báo cáo.', 'error');
-          }
-        });
+  const bindRoomActions = () => {
+    grid.querySelectorAll('.approve-btn, .reject-btn').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        try {
+          await ApiService.updateRoomStatus(btn.dataset.id, btn.dataset.status);
+          showMessage('Đã cập nhật trạng thái bài đăng.', 'success');
+          await loadRooms();
+        } catch (error) {
+          showMessage(error.message || 'Không thể cập nhật trạng thái.', 'error');
+        }
       });
-    } catch (error) {
-      reportList.innerHTML = `<p class="message error">${error.message || 'Không thể tải danh sách báo cáo.'}</p>`;
-    }
+    });
+
+    grid.querySelectorAll('.delete-btn').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        if (!confirm('Bạn chắc chắn muốn xóa bài đăng này?')) return;
+        try {
+          await ApiService.deleteRoom(btn.dataset.id);
+          showMessage('Đã xóa bài đăng.', 'success');
+          await loadRooms();
+        } catch (error) {
+          showMessage(error.message || 'Không thể xóa bài đăng.', 'error');
+        }
+      });
+    });
   };
 
-  const render = async () => {
+  const renderRooms = () => {
+    if (!grid) return;
+    updateFilterButtons();
+    const rooms = getFilteredRooms();
+    if (!rooms.length) {
+      grid.innerHTML = '<p class="message">Không có bài đăng nào phù hợp bộ lọc.</p>';
+      return;
+    }
+    grid.innerHTML = rooms.map(roomCardHtml).join('');
+    bindRoomActions();
+  };
+
+  const updateStats = () => {
+    const total = allRooms.length;
+    const pending = allRooms.filter(isPendingRoom).length;
+    const approved = allRooms.filter(isApprovedRoom).length;
+    if (totalRoomsNode) totalRoomsNode.textContent = String(total);
+    if (pendingRoomsNode) pendingRoomsNode.textContent = String(pending);
+    if (approvedRoomsNode) approvedRoomsNode.textContent = String(approved);
+  };
+
+  const loadRooms = async () => {
     if (!grid) return;
     grid.innerHTML = '<p>Đang tải dữ liệu...</p>';
-
-    try {
-      const data = await ApiService.getAllRoomsForAdmin();
-      const rooms = data?.content || [];
-      const total = rooms.length;
-      const pending = rooms.filter((room) => String(room.status || '').toUpperCase() === 'PENDING').length;
-      const approved = rooms.filter((room) => {
-        const s = String(room.status || '').toUpperCase();
-        return s === 'APPROVED' || s === 'AVAILABLE';
-      }).length;
-
-      if (totalRoomsNode) totalRoomsNode.textContent = String(total);
-      if (pendingRoomsNode) pendingRoomsNode.textContent = String(pending);
-      if (approvedRoomsNode) approvedRoomsNode.textContent = String(approved);
-
-      if (!rooms.length) {
-        grid.innerHTML = '<p class="message">Hiện chưa có tin nào chờ duyệt.</p>';
-        return;
-      }
-
-      grid.innerHTML = rooms.map(roomCardHtml).join('');
-
-      grid.querySelectorAll('.approve-btn, .reject-btn').forEach((btn) => {
-        btn.addEventListener('click', async () => {
-          try {
-            await ApiService.updateRoomStatus(btn.dataset.id, btn.dataset.status);
-            showMessage('Đã cập nhật trạng thái bài đăng.', 'success');
-            render();
-          } catch (error) {
-            showMessage(error.message || 'Không thể cập nhật trạng thái.', 'error');
-          }
-        });
-      });
-
-      grid.querySelectorAll('.delete-btn').forEach((btn) => {
-        btn.addEventListener('click', async () => {
-          if (!confirm('Bạn chắc chắn muốn xóa bài đăng này?')) return;
-          try {
-            await ApiService.deleteRoom(btn.dataset.id);
-            showMessage('Đã xóa bài đăng.', 'success');
-            render();
-            renderReports();
-          } catch (error) {
-            showMessage(error.message || 'Không thể xóa bài đăng.', 'error');
-          }
-        });
-      });
-    } catch (error) {
-      grid.innerHTML = `<p class="message error">${error.message || 'Không thể tải danh sách quản trị.'}</p>`;
-    }
+    const data = await ApiService.getAllRoomsForAdmin();
+    allRooms = data?.content || [];
+    updateStats();
+    renderRooms();
   };
 
-  const init = () => {
+  const bindFilters = () => {
+    filterButtons.forEach((button) => {
+      button.addEventListener('click', () => {
+        activeFilter = button.dataset.filter || 'ALL';
+        renderRooms();
+      });
+    });
+  };
+
+  const init = async () => {
     if (!ApiService.isAdmin()) {
       if (grid) grid.innerHTML = '<p class="message error">Bạn cần quyền admin để vào trang này.</p>';
       return;
     }
-    render();
-    renderReports();
+    bindFilters();
+    try {
+      await loadRooms();
+    } catch (error) {
+      if (grid) {
+        grid.innerHTML = `<p class="message error">${error.message || 'Không thể tải danh sách quản trị.'}</p>`;
+      }
+    }
   };
 
   init();

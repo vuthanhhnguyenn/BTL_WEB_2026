@@ -39,50 +39,50 @@
             </div>
             <div class="thumbnail-row" id="thumbnailRow">
               ${room.images.map((img, index) => `
-                  <button class="zoom-hover ${index === 0 ? 'active' : ''}" type="button" data-img="${img}">
-                    <img src="${img}" alt="Ảnh ${index + 1}">
-                  </button>
-                `).join('')}
+                <button class="zoom-hover ${index === 0 ? 'active' : ''}" type="button" data-img="${img}">
+                  <img src="${img}" alt="Ảnh ${index + 1}">
+                </button>
+              `).join('')}
             </div>
           </div>
 
           <div class="info-list">
-              <div class="info-item"><strong>Khoảng giá:</strong><br>${ApiService.formatCurrency(room.priceFrom)} - ${ApiService.formatCurrency(room.priceTo)}</div>
-              <div class="info-item"><strong>Diện tích:</strong><br>${room.area}m2</div>
-              <div class="info-item"><strong>Hướng nhà:</strong><br>${room.direction}</div>
-              <div class="info-item"><strong>Phòng ngủ:</strong><br>${room.bedrooms}</div>
-              <div class="info-item"><strong>Phòng tắm:</strong><br>${room.bathrooms}</div>
-              <div class="info-item"><strong>Khu vực:</strong><br>${room.district}, ${room.city}</div>
+            <div class="info-item"><strong>Khoảng giá:</strong><br>${ApiService.formatCurrency(room.priceFrom)} - ${ApiService.formatCurrency(room.priceTo)}</div>
+            <div class="info-item"><strong>Diện tích:</strong><br>${room.area}m2</div>
+            <div class="info-item"><strong>Hướng nhà:</strong><br>${room.direction}</div>
+            <div class="info-item"><strong>Phòng ngủ:</strong><br>${room.bedrooms}</div>
+            <div class="info-item"><strong>Phòng tắm:</strong><br>${room.bathrooms}</div>
+            <div class="info-item"><strong>Khu vực:</strong><br>${room.district}, ${room.city}</div>
           </div>
 
-            <h3>Mô tả chung</h3>
+          <h3>Mô tả chung</h3>
           <p>${room.description}</p>
 
-            <h3>Vị trí trên bản đồ</h3>
+          <h3>Vị trí trên bản đồ</h3>
           <div class="map-wrap">
             <iframe src="${mapUrl}" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
           </div>
         </section>
 
         <aside class="card zoom-hover detail-contact">
-            <h3>Thông tin liên hệ</h3>
-            <p><strong>Người đăng:</strong> ${room.contact?.name || 'Đang cập nhật'}</p>
-            <p><strong>Số điện thoại:</strong> ${room.contact?.phone || 'Đang cập nhật'}</p>
-            <p><strong>Email:</strong> ${room.contact?.email || 'Đang cập nhật'}</p>
-            <a class="btn btn-primary" id="contactCallBtn" href="tel:${(room.contact?.phone || '').replace(/\s+/g, '')}">Gọi ngay</a>
+          <h3>Thông tin liên hệ</h3>
+          <p><strong>Người đăng:</strong> ${room.contact?.name || 'Đang cập nhật'}</p>
+          <p><strong>Số điện thoại:</strong> ${room.contact?.phone || 'Đang cập nhật'}</p>
+          <p><strong>Email:</strong> ${room.contact?.email || 'Đang cập nhật'}</p>
+          <a class="btn btn-primary" id="contactCallBtn" href="tel:${(room.contact?.phone || '').replace(/\s+/g, '')}">Gọi ngay</a>
 
           <div class="report-form">
-              <h3 style="margin-top: 16px;">Báo cáo bài đăng</h3>
-              <select id="reportReason">
-                <option value="Sai thông tin">Sai thông tin</option>
-                <option value="Trùng lặp">Trùng lặp</option>
-                <option value="Lừa đảo">Lừa đảo</option>
-                <option value="Nội dung không phù hợp">Nội dung không phù hợp</option>
-              </select>
-              <textarea id="reportDetail" placeholder="Mô tả ngắn lý do báo cáo"></textarea>
-              <button class="btn btn-danger-outline" id="reportSubmitBtn" type="button">Gửi báo cáo</button>
-              <p id="reportMessage" hidden></p>
-              ${currentUser ? '' : '<p class="muted-note">Đăng nhập để gửi báo cáo và lưu yêu thích.</p>'}
+            <h3 style="margin-top: 16px;">Báo cáo bài đăng</h3>
+            <select id="reportReason">
+              <option value="Sai thông tin">Sai thông tin</option>
+              <option value="Trùng lặp">Trùng lặp</option>
+              <option value="Lừa đảo">Lừa đảo</option>
+              <option value="Nội dung không phù hợp">Nội dung không phù hợp</option>
+            </select>
+            <textarea id="reportDetail" placeholder="Mô tả ngắn lý do báo cáo"></textarea>
+            <button class="btn btn-danger-outline" id="reportSubmitBtn" type="button">Gửi báo cáo</button>
+            <p id="reportMessage" hidden></p>
+            ${currentUser ? '' : '<p class="muted-note">Đăng nhập để gửi báo cáo và lưu yêu thích.</p>'}
           </div>
         </aside>
       </div>
@@ -117,7 +117,7 @@
     });
 
     contactCallBtn?.addEventListener('click', () => {
-      ApiService.recordContactClick(room.id).catch(() => { });
+      ApiService.recordContactClick(room.id).catch(() => {});
     });
 
     reportSubmitBtn?.addEventListener('click', async () => {

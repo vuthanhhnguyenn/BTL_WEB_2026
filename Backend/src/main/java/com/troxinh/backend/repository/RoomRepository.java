@@ -15,6 +15,7 @@ public interface RoomRepository extends JpaRepository<Room, Long> {
 
     List<Room> findByUserIdOrderByCreatedAtDesc(Long userId);
     List<Room> findByStatusIgnoreCaseOrderByCreatedAtDesc(String status);
+    List<Room> findAllByOrderByCreatedAtDesc();
 
     @Query("""
     SELECT r FROM Room r

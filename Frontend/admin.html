@@ -31,7 +31,7 @@
       <section class="card zoom-hover admin-hero">
         <div>
           <h1 class="section-title">Quản trị bài đăng</h1>
-          <p class="section-subtitle">Duyệt, từ chối, chỉnh trạng thái và xóa toàn bộ bài đăng của người dùng.</p>
+          <p class="section-subtitle">Duyệt, từ chối, chỉnh trạng thái và xóa bài đăng của người dùng trong một khu vực riêng.</p>
         </div>
         <div class="admin-stats">
           <div class="admin-stat"><strong id="totalRooms">0</strong><span>Tổng bài</span></div>
@@ -40,19 +40,33 @@
         </div>
       </section>
 
-      <section style="margin-top: 18px;">
-        <p id="adminMessage" hidden></p>
-        <div id="adminRoomsGrid" class="room-grid"></div>
-      </section>
-
       <section class="card zoom-hover" style="margin-top: 18px;">
-        <div class="section-head">
+        <div class="section-head" style="margin-bottom: 12px; gap: 12px; flex-wrap: wrap;">
           <div>
-            <h2 class="section-title" style="margin-bottom: 6px;">Báo cáo bài đăng</h2>
-            <p class="section-subtitle">Danh sách báo cáo từ người dùng để admin kiểm duyệt nhanh.</p>
+            <h2 class="section-title" style="margin-bottom: 6px;">Khu vực quản trị</h2>
+            <p class="section-subtitle">Tách riêng danh sách báo cáo để admin nhìn thấy nhanh hơn và xử lý tập trung hơn.</p>
+          </div>
+          <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <a class="btn btn-primary" href="admin.html">Bài đăng</a>
+            <a class="btn btn-outline" href="admin-reports.html">Báo cáo bài viết</a>
           </div>
         </div>
-        <div id="reportList" class="stack-list"></div>
+      </section>
+
+      <section style="margin-top: 18px;">
+        <div class="section-head" style="margin-bottom: 12px; gap: 12px; flex-wrap: wrap;">
+          <div>
+            <h2 class="section-title" style="margin-bottom: 6px;">Danh sách bài đăng</h2>
+            <p class="section-subtitle">Lọc nhanh bài đã duyệt và chưa duyệt.</p>
+          </div>
+          <div id="adminRoomFilters" style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <button class="btn btn-outline admin-filter-btn" type="button" data-filter="ALL">Tất cả</button>
+            <button class="btn btn-outline admin-filter-btn" type="button" data-filter="APPROVED">Đã duyệt</button>
+            <button class="btn btn-outline admin-filter-btn" type="button" data-filter="PENDING">Chưa duyệt</button>
+          </div>
+        </div>
+        <p id="adminMessage" hidden></p>
+        <div id="adminRoomsGrid" class="room-grid"></div>
       </section>
     </div>
   </main>

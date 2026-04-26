@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="vi">
 <head>
   <meta charset="UTF-8">
@@ -29,7 +29,7 @@
     <div class="container page-enter">
       <section class="card zoom-hover post-room-card">
         <h1 class="section-title">Đăng tin cho thuê phòng</h1>
-        <p class="section-subtitle">Vui lòng nhập đầy đủ thông tin phòng và ảnh từng phòng trước khi đăng. Các mục quan trọng đã được sắp xếp theo từng nhóm để dễ nhập hơn.</p>
+        <p class="section-subtitle">Vui lòng nhập đầy đủ thông tin phòng và thêm ảnh rõ ràng để người thuê dễ đưa ra quyết định.</p>
         <br>
         <p id="postMessage" hidden></p>
 
@@ -153,29 +153,21 @@
           <div class="field full form-section">
             <div class="form-section-head">
               <h2>Ảnh phòng</h2>
-              <span>Chọn nhiều ảnh và xem từng ảnh ngay bên dưới</span>
+              <span>Chọn ảnh theo kiểu lưới preview, có thể xóa từng ảnh trước khi đăng.</span>
             </div>
           </div>
 
           <div class="field full">
-            <label for="images">Ảnh từng phòng (chọn nhiều ảnh)</label>
-            <p class="field-help">Bạn có thể chọn nhiều ảnh cùng lúc. Ảnh sẽ hiện dạng thẻ để dễ kiểm tra trước khi đăng.</p>
-            <div id="dropzone" class="dropzone" tabindex="0" role="button" aria-label="Kéo thả hoặc chọn ảnh phòng">
-              <input id="images" name="images" type="file" accept="image/*" multiple required>
-              <div class="dropzone-content">
-                <strong>Kéo thả ảnh vào đây</strong>
-                <span>Hoặc bấm để chọn nhiều ảnh cùng lúc</span>
-                <small>Hỗ trợ JPG, PNG, WEBP. Có thể thêm từng ảnh một hoặc chọn nhiều ảnh ngay từ máy.</small>
-              </div>
-            </div>
-          </div>
-
-          <div class="field full">
+            <label for="images">Ảnh từng phòng</label>
+            <p class="field-help">Bấm vào ô dấu cộng để thêm ảnh, hoặc kéo thả nhiều ảnh cùng lúc vào khu vực preview.</p>
+            <input id="images" name="images" type="file" accept="image/*" multiple hidden>
             <div class="preview-summary">
               <strong>Ảnh đã chọn</strong>
               <span id="imageCount">0 ảnh</span>
             </div>
-            <div id="imagePreview" class="file-preview file-preview-large"></div>
+            <div id="dropzone" class="image-picker-grid" tabindex="0" role="button" aria-label="Chọn ảnh phòng">
+              <div id="imagePreview" class="image-preview-grid"></div>
+            </div>
           </div>
 
           <div class="field full">
@@ -216,15 +208,10 @@
     </div>
   </footer>
 
-  <script src="assets/js/config.js"></script>
-  <script src="assets/js/mock-data.js"></script>
-  <script src="assets/js/api.js"></script>
-  <script src="assets/js/layout.js"></script>
-  <script src="assets/js/post-room.js"></script>
+  <script src="assets/js/config.js?v=20260426-1"></script>
+  <script src="assets/js/mock-data.js?v=20260426-1"></script>
+  <script src="assets/js/api.js?v=20260426-1"></script>
+  <script src="assets/js/layout.js?v=20260426-1"></script>
+  <script src="assets/js/post-room.js?v=20260426-4"></script>
 </body>
 </html>
-
-
-
-
-

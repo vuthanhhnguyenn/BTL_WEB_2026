@@ -23,6 +23,7 @@ import java.nio.file.Paths;
 import java.util.UUID;
 import java.util.ArrayList;
 import java.util.List;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -66,6 +67,7 @@ public class RoomWriteService {
         this.uploadRoot = resolveUploadRoot(environment);
     }
 
+    @Transactional
     public RoomDetailResponse createRoom(RoomCreateRequest request, List<MultipartFile> images, String authorizationHeader) {
         if (request.priceFrom() > request.priceTo()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "priceFrom must not be greater than priceTo");
@@ -247,6 +249,7 @@ public class RoomWriteService {
         );
     }
 
+    @Transactional
     public void deleteRoom(Long roomId, Long userId, String authorizationHeader) {
         Room room = roomRepository.findById(roomId)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Room not found"));
@@ -256,12 +259,9 @@ public class RoomWriteService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You can only delete your own rooms");
         }
 
-        roomImageRepository.deleteAll(roomImageRepository.findByRoomIdOrderBySortOrderAscIdAsc(roomId));
         deleteRoomFiles(roomId);
-        roomContactRepository.deleteAll(roomContactRepository.findAll().stream()
-            .filter(c -> c.getRoom().getId().equals(roomId))
-            .toList());
-        roomContactRepository.deleteAll(roomContactRepository.findByRoomId(roomId).stream().toList());
+        roomImageRepository.deleteAll(roomImageRepository.findByRoomIdOrderBySortOrderAscIdAsc(roomId));
+        roomContactRepository.deleteByRoomId(roomId);
         favoriteRepository.deleteByRoomId(roomId);
         roomReportRepository.deleteByRoomId(roomId);
 
@@ -292,6 +292,12 @@ public class RoomWriteService {
     public boolean isAdmin(String authorizationHeader) {
         String role = getRoleFromToken(authorizationHeader);
         return role != null && role.equalsIgnoreCase("ADMIN");
+    }
+
+    public boolean canEditRoom(Long roomId, Long userId, String authorizationHeader) {
+        Room room = roomRepository.findById(roomId)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Room not found"));
+        return isAdmin(authorizationHeader) || (userId != null && room.getUser().getId().equals(userId));
     }
 
     public RoomDetailResponse updateFeatured(Long roomId, boolean featured, Long userId, String authorizationHeader) {

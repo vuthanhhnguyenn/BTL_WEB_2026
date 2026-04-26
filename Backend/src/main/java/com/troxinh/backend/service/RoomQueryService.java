@@ -27,26 +27,20 @@ public class RoomQueryService {
 
     public RoomSearchResponse getRoomsByUserId(Long userId) {
         List<Room> rooms = roomRepository.findByUserIdOrderByCreatedAtDesc(userId);
-        List<RoomDetailResponse> items = rooms.stream()
-            .map(room -> roomResponseMapper.toRoomDetailResponse(room, userId))
-            .toList();
+        List<RoomDetailResponse> items = roomResponseMapper.toRoomDetailResponses(rooms, userId);
         return new RoomSearchResponse(items, items.size());
     }
 
     public RoomSearchResponse getAllRoomsForAdmin(Long currentUserId) {
-        List<Room> rooms = roomRepository.findByStatusIgnoreCaseOrderByCreatedAtDesc("PENDING");
-        List<RoomDetailResponse> items = rooms.stream()
-            .map(room -> roomResponseMapper.toRoomDetailResponse(room, currentUserId))
-            .toList();
+        List<Room> rooms = roomRepository.findAllByOrderByCreatedAtDesc();
+        List<RoomDetailResponse> items = roomResponseMapper.toRoomDetailResponses(rooms, currentUserId);
         return new RoomSearchResponse(items, items.size());
     }
 
     public RoomSearchResponse getInitialRooms(int limit, Long currentUserId) {
         int safeLimit = limit > 0 ? limit : 5;
         List<Room> rooms = roomRepository.findPublicRooms(PageRequest.of(0, safeLimit));
-        List<RoomDetailResponse> items = rooms.stream()
-            .map(room -> roomResponseMapper.toRoomDetailResponse(room, currentUserId))
-            .toList();
+        List<RoomDetailResponse> items = roomResponseMapper.toRoomDetailResponses(rooms, currentUserId);
         return new RoomSearchResponse(items, items.size());
     }
 
@@ -61,20 +55,15 @@ public class RoomQueryService {
         }
 
         List<Room> rooms = roomRepository.searchRooms(k, d, minPrice, maxPrice);
-
-        List<RoomDetailResponse> items = rooms.stream()
-            .map(room -> roomResponseMapper.toRoomDetailResponse(room, currentUserId))
-            .toList();
+        List<RoomDetailResponse> items = roomResponseMapper.toRoomDetailResponses(rooms, currentUserId);
 
         return new RoomSearchResponse(items, items.size());
     }
 
     public RoomSearchResponse getHighlights(int limit, Long currentUserId) {
         int safeLimit = limit > 0 ? limit : 12;
-        List<RoomDetailResponse> items = roomRepository.findHighlights(PageRequest.of(0, safeLimit))
-            .stream()
-            .map(room -> roomResponseMapper.toRoomDetailResponse(room, currentUserId))
-            .toList();
+        List<Room> rooms = roomRepository.findHighlights(PageRequest.of(0, safeLimit));
+        List<RoomDetailResponse> items = roomResponseMapper.toRoomDetailResponses(rooms, currentUserId);
         return new RoomSearchResponse(items, items.size());
     }
 

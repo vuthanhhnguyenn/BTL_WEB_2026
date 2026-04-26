@@ -1,27 +1,19 @@
 (() => {
   const form = document.getElementById('profileForm');
-  const passwordForm = document.getElementById('changePasswordForm');
   const messageNode = document.getElementById('profileMessage');
-  const passwordMessageNode = document.getElementById('passwordMessage');
-  const logoutBtn = document.getElementById('logoutBtn');
   const avatarUrlInput = document.getElementById('avatarUrl');
   const avatarPreviewContainer = document.getElementById('avatarPreviewContainer');
   const avatarPreview = document.getElementById('avatarPreview');
   const favoritesGrid = document.getElementById('favoritesGrid');
   const savedSearchesList = document.getElementById('savedSearchesList');
+  const profileHeroName = document.getElementById('profileHeroName');
+  const profileHeroMeta = document.getElementById('profileHeroMeta');
 
   const showMessage = (message, type = 'success') => {
     if (!messageNode) return;
     messageNode.className = `message ${type}`;
     messageNode.textContent = message;
     messageNode.hidden = false;
-  };
-
-  const showPasswordMessage = (message, type = 'success') => {
-    if (!passwordMessageNode) return;
-    passwordMessageNode.className = `message ${type}`;
-    passwordMessageNode.textContent = message;
-    passwordMessageNode.hidden = false;
   };
 
   const getCurrentUser = () => window.ApiService?.getCurrentUser?.();
@@ -40,6 +32,10 @@
     if (emailInput) emailInput.value = user.email || '';
     if (phoneInput) phoneInput.value = user.phone || '';
     if (roleInput) roleInput.value = user.role || '';
+    if (profileHeroName) profileHeroName.textContent = user.fullName || 'Tài khoản của bạn';
+    if (profileHeroMeta) {
+      profileHeroMeta.textContent = `${user.email || ''} ${user.phone ? `| ${user.phone}` : ''}`.trim();
+    }
 
     if (avatarUrlInput && user.avatarUrl) {
       avatarUrlInput.value = user.avatarUrl;
@@ -55,15 +51,18 @@
 
   const roomCardHtml = (room) => `
     <article class="card room-card zoom-hover">
-      <img src="${room.images?.[0] || ''}" alt="${room.title}">
+      <div class="room-card-image-wrap">
+        <img src="${room.images?.[0] || ''}" alt="${room.title}">
+        ${room.featured ? '<div class="room-card-status"><span class="featured-pill">Nổi bật</span></div>' : ''}
+      </div>
       <div class="room-card-body">
         <div class="room-card-topline">
           <span class="badge">${room.city || ''}</span>
-          ${room.featured ? '<span class="featured-pill">Nổi bật</span>' : ''}
+          <span class="muted-note">${room.favoriteCount || 0} lượt lưu</span>
         </div>
         <h3>${room.title}</h3>
         <div class="room-price">${ApiService.formatCurrency(room.priceFrom)} - ${ApiService.formatCurrency(room.priceTo)}</div>
-        <div class="room-meta">${room.district} | ${room.favoriteCount || 0} lượt lưu</div>
+        <div class="room-meta">${room.district} | ${room.area}m2</div>
         <div class="room-card-actions">
           <a class="btn btn-primary" href="room-detail.html?id=${room.id}">Xem chi tiết</a>
         </div>
@@ -111,15 +110,11 @@
           <div class="stack-item-head">
             <div>
               <strong>${item.name}</strong>
-              <div class="stack-item-meta">
-                ${item.keyword || 'Không có từ khóa'} | ${item.district || 'Tất cả khu vực'}
-              </div>
+              <div class="stack-item-meta">${item.keyword || 'Không có từ khóa'} | ${item.district || 'Tất cả khu vực'}</div>
             </div>
             <button class="btn btn-danger-outline delete-saved-search-btn" type="button" data-id="${item.id}">Xóa</button>
           </div>
-          <div class="stack-item-meta">
-            Giá: ${item.minPrice ? ApiService.formatCurrency(item.minPrice) : '0'} - ${item.maxPrice ? ApiService.formatCurrency(item.maxPrice) : 'Không giới hạn'}
-          </div>
+          <div class="stack-item-meta">Giá: ${item.minPrice ? ApiService.formatCurrency(item.minPrice) : '0'} - ${item.maxPrice ? ApiService.formatCurrency(item.maxPrice) : 'Không giới hạn'}</div>
           <div class="room-card-actions">
             <a class="btn btn-primary" href="${formatSavedSearchLink(item)}">Mở bộ lọc</a>
           </div>
@@ -145,7 +140,7 @@
     const currentUser = getCurrentUser();
     if (!currentUser || !currentUser.id) {
       showMessage('Vui lòng đăng nhập để xem thông tin cá nhân.', 'error');
-      setTimeout(redirectToLogin, 1500);
+      setTimeout(redirectToLogin, 1200);
       return;
     }
 
@@ -164,12 +159,6 @@
 
   const handleAvatarPreview = () => {
     if (!avatarUrlInput) return;
-
-    avatarUrlInput.addEventListener('blur', () => {
-      const url = avatarUrlInput.value.trim();
-      if (url) showAvatarPreview(url);
-    });
-
     avatarUrlInput.addEventListener('input', () => {
       const url = avatarUrlInput.value.trim();
       if (avatarPreviewContainer) avatarPreviewContainer.hidden = !url;
@@ -177,43 +166,15 @@
     });
   };
 
-  const handleLogout = () => {
-    logoutBtn?.addEventListener('click', () => {
-      window.ApiService?.logout?.();
-      window.location.href = 'index.html';
-    });
-  };
-
   const init = () => {
     const currentUser = getCurrentUser();
     if (!currentUser || !currentUser.id) {
       showMessage('Vui lòng đăng nhập để xem thông tin cá nhân.', 'error');
-      setTimeout(redirectToLogin, 1500);
+      setTimeout(redirectToLogin, 1200);
       return;
     }
 
     handleAvatarPreview();
-    handleLogout();
-
-    passwordForm?.addEventListener('submit', async (event) => {
-      event.preventDefault();
-      const formData = new FormData(passwordForm);
-      const oldPassword = String(formData.get('oldPassword') || '').trim();
-      const newPassword = String(formData.get('newPassword') || '').trim();
-
-      if (!oldPassword || !newPassword) {
-        showPasswordMessage('Vui lòng nhập đầy đủ thông tin.', 'error');
-        return;
-      }
-
-      try {
-        await window.ApiService?.changePassword?.(currentUser.id, oldPassword, newPassword);
-        showPasswordMessage('Đổi mật khẩu thành công!', 'success');
-        passwordForm.reset();
-      } catch (error) {
-        showPasswordMessage(error.message || 'Không thể đổi mật khẩu.', 'error');
-      }
-    });
 
     form?.addEventListener('submit', async (event) => {
       event.preventDefault();

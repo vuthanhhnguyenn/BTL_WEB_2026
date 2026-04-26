@@ -62,6 +62,18 @@ public class RoomController {
         return roomDetailService.getRoomDetail(id, userId);
     }
 
+    @GetMapping("/{id:\\d+}/edit")
+    public RoomDetailResponse getRoomForEdit(
+        @PathVariable Long id,
+        @RequestHeader(value = "Authorization", required = false) String authorizationHeader
+    ) {
+        Long userId = requireUserId(authorizationHeader);
+        if (!roomWriteService.canEditRoom(id, userId, authorizationHeader)) {
+            throw new org.springframework.web.server.ResponseStatusException(HttpStatus.FORBIDDEN, "You can only edit your own rooms");
+        }
+        return roomDetailService.getRoomForEdit(id, userId);
+    }
+
     @GetMapping("/ids/first-12")
     public List<Long> getFirst12RoomIds() {
         return roomQueryService.getFirst12RoomIds();

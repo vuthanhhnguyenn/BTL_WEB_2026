@@ -2,11 +2,18 @@
   const form = document.getElementById('editRoomForm');
   const messageNode = document.getElementById('editMessage');
   const newImagePreview = document.getElementById('newImagePreview');
+  const imageCount = document.getElementById('newImageCount');
+  const picker = document.getElementById('editImagePicker');
+  const fileInput = document.getElementById('images');
   const currentImagesContainer = document.getElementById('currentImagesContainer');
   const currentImagesDiv = document.getElementById('currentImages');
 
   const params = new URLSearchParams(window.location.search);
   const roomId = params.get('id');
+
+  const objectUrlMap = new WeakMap();
+  let selectedFiles = [];
+  let isDropActive = false;
 
   const showMessage = (message, type = 'success') => {
     if (!messageNode) return;
@@ -15,20 +22,117 @@
     messageNode.hidden = false;
   };
 
-  const getCurrentUser = () => {
-    return window.ApiService?.getCurrentUser?.();
-  };
+  const getCurrentUser = () => window.ApiService?.getCurrentUser?.();
 
   const redirectToLogin = () => {
     window.location.href = 'login.html';
   };
 
-  const redirectToMyListings = () => {
+  const redirectAfterSave = () => {
+    if (window.ApiService?.isAdmin?.()) {
+      window.location.href = 'admin.html';
+      return;
+    }
     window.location.href = 'my-listings.html';
   };
 
-  const formatPrice = (value) => {
-    return new Intl.NumberFormat('vi-VN').format(value) + ' vnđ';
+  const formatPrice = (value) => `${new Intl.NumberFormat('vi-VN').format(value)} vnđ`;
+
+  const updateImageCount = () => {
+    if (!imageCount) return;
+    imageCount.textContent = selectedFiles.length ? `${selectedFiles.length} ảnh mới đã chọn` : '0 ảnh';
+  };
+
+  const syncFilesToInput = () => {
+    if (!fileInput) return;
+    const dataTransfer = new DataTransfer();
+    selectedFiles.forEach((file) => dataTransfer.items.add(file));
+    fileInput.files = dataTransfer.files;
+  };
+
+  const clearObjectUrls = (files = selectedFiles) => {
+    files.forEach((file) => {
+      const objectUrl = objectUrlMap.get(file);
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    });
+  };
+
+  const setPickerState = (active) => {
+    isDropActive = active;
+    picker?.classList.toggle('is-dragover', active);
+  };
+
+  const openFileDialog = () => fileInput?.click();
+
+  const addFiles = (incomingFiles) => {
+    const nextFiles = [...selectedFiles];
+    incomingFiles.forEach((file) => {
+      if (!file.type.startsWith('image/')) return;
+      const exists = nextFiles.some(
+        (current) =>
+          current.name === file.name &&
+          current.size === file.size &&
+          current.lastModified === file.lastModified
+      );
+      if (!exists) nextFiles.push(file);
+    });
+    selectedFiles = nextFiles;
+    syncFilesToInput();
+    renderNewImagePreview();
+  };
+
+  const removeFileAt = (index) => {
+    const removed = selectedFiles[index];
+    if (removed) clearObjectUrls([removed]);
+    selectedFiles = selectedFiles.filter((_, fileIndex) => fileIndex !== index);
+    syncFilesToInput();
+    renderNewImagePreview();
+  };
+
+  const renderCurrentImages = (images) => {
+    if (!currentImagesDiv) return;
+    if (!images?.length) {
+      if (currentImagesContainer) currentImagesContainer.hidden = true;
+      currentImagesDiv.innerHTML = '';
+      return;
+    }
+    if (currentImagesContainer) currentImagesContainer.hidden = false;
+    currentImagesDiv.innerHTML = images
+      .map((img, index) => `
+        <article class="image-preview-card is-static">
+          <img src="${img}" alt="Ảnh hiện tại ${index + 1}">
+        </article>
+      `)
+      .join('');
+  };
+
+  const renderNewImagePreview = () => {
+    if (!newImagePreview) return;
+
+    const cards = selectedFiles.map((file, index) => {
+      const objectUrl = objectUrlMap.get(file) || URL.createObjectURL(file);
+      objectUrlMap.set(file, objectUrl);
+      return `
+        <article class="image-preview-card">
+          <img src="${objectUrl}" alt="${file.name}">
+          <button class="image-remove-btn" type="button" data-remove-index="${index}" aria-label="Xóa ảnh ${file.name}">×</button>
+        </article>
+      `;
+    }).join('');
+
+    newImagePreview.innerHTML = `
+      ${cards}
+      <button class="image-add-tile" type="button" id="editAddImageTile" aria-label="Thêm ảnh">
+        <span class="image-add-plus">+</span>
+        <span>Thêm ảnh</span>
+      </button>
+    `;
+
+    newImagePreview.querySelectorAll('[data-remove-index]').forEach((button) => {
+      button.addEventListener('click', () => removeFileAt(Number(button.dataset.removeIndex)));
+    });
+    newImagePreview.querySelector('#editAddImageTile')?.addEventListener('click', openFileDialog);
+    updateImageCount();
   };
 
   const initPriceSlider = () => {
@@ -64,25 +168,6 @@
       priceToSlider.addEventListener('input', syncSliderToInput);
       priceToInput.addEventListener('input', syncInputToSlider);
     }
-  };
-
-  const renderCurrentImages = (images) => {
-    if (!currentImagesDiv || !images || !images.length) return;
-    if (currentImagesContainer) currentImagesContainer.hidden = false;
-    currentImagesDiv.innerHTML = images
-      .map((img, index) => `<img src="${img}" alt="Ảnh ${index + 1}">`)
-      .join('');
-  };
-
-  const renderNewImagePreview = (files) => {
-    if (!newImagePreview) return;
-    if (!files.length) {
-      newImagePreview.innerHTML = '';
-      return;
-    }
-    newImagePreview.innerHTML = files
-      .map((file) => `<img src="${URL.createObjectURL(file)}" alt="${file.name}">`)
-      .join('');
   };
 
   const fillForm = (room) => {
@@ -123,26 +208,11 @@
     if (priceToInput) priceToInput.value = priceTo;
     if (priceToDisplay) priceToDisplay.textContent = formatPrice(priceTo);
 
-    if (room.images && room.images.length) {
-      renderCurrentImages(room.images);
-    }
+    renderCurrentImages(room.images || []);
   };
 
   const validatePayload = (payload) => {
-    const requiredFields = [
-      'title',
-      'address',
-      'district',
-      'city',
-      'mapAddress',
-      'priceFrom',
-      'priceTo',
-      'area',
-      'direction',
-      'bedrooms',
-      'bathrooms',
-      'description'
-    ];
+    const requiredFields = ['title', 'address', 'district', 'city', 'mapAddress', 'priceFrom', 'priceTo', 'area', 'direction', 'bedrooms', 'bathrooms', 'description'];
 
     for (const field of requiredFields) {
       if (!payload[field] && payload[field] !== 0) {
@@ -166,7 +236,7 @@
     }
 
     try {
-      const room = await window.ApiService?.getRoomById?.(roomId);
+      const room = await window.ApiService?.getRoomForEdit?.(roomId);
       if (!room) {
         showMessage('Phòng không tồn tại.', 'error');
         return null;
@@ -186,13 +256,43 @@
       return;
     }
 
-    const fileInput = form?.querySelector('input[name="images"]');
-    if (fileInput) {
-      fileInput.addEventListener('change', () => {
-        const files = Array.from(fileInput.files || []);
-        renderNewImagePreview(files);
-      });
-    }
+    renderNewImagePreview();
+
+    fileInput?.addEventListener('change', () => addFiles(Array.from(fileInput.files || [])));
+
+    picker?.addEventListener('click', (event) => {
+      if (event.target.closest('.image-remove-btn')) return;
+      if (event.target.closest('.image-add-tile')) return;
+      openFileDialog();
+    });
+
+    picker?.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        openFileDialog();
+      }
+    });
+
+    picker?.addEventListener('dragenter', (event) => {
+      event.preventDefault();
+      setPickerState(true);
+    });
+
+    picker?.addEventListener('dragover', (event) => {
+      event.preventDefault();
+      if (!isDropActive) setPickerState(true);
+    });
+
+    picker?.addEventListener('dragleave', (event) => {
+      event.preventDefault();
+      if (event.target === picker) setPickerState(false);
+    });
+
+    picker?.addEventListener('drop', (event) => {
+      event.preventDefault();
+      setPickerState(false);
+      addFiles(Array.from(event.dataTransfer?.files || []));
+    });
 
     form?.addEventListener('submit', async (event) => {
       event.preventDefault();
@@ -224,7 +324,7 @@
         validatePayload(payload);
         await window.ApiService?.updateRoom?.(roomId, payload, files);
         showMessage('Cập nhật tin thành công!', 'success');
-        setTimeout(redirectToMyListings, 1500);
+        setTimeout(redirectAfterSave, 1500);
       } catch (error) {
         showMessage(error.message || 'Không thể cập nhật tin lúc này.', 'error');
       }
@@ -235,9 +335,7 @@
     init();
     initPriceSlider();
     const room = await loadRoom();
-    if (room) {
-      fillForm(room);
-    }
+    if (room) fillForm(room);
   };
 
   main();
