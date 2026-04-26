@@ -19,9 +19,11 @@ import com.troxinh.backend.repository.UserRepository;
 import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 @Service
+@Transactional(readOnly = true)
 public class UserFeatureService {
 
     private static final String DEFAULT_REPORT_STATUS = "OPEN";
@@ -49,6 +51,7 @@ public class UserFeatureService {
         this.roomResponseMapper = roomResponseMapper;
     }
 
+    @Transactional
     public void addFavorite(Long userId, Long roomId) {
         if (favoriteRepository.existsByUserIdAndRoomId(userId, roomId)) {
             return;
@@ -63,18 +66,20 @@ public class UserFeatureService {
         favoriteRepository.save(favorite);
     }
 
+    @Transactional
     public void removeFavorite(Long userId, Long roomId) {
         favoriteRepository.deleteByUserIdAndRoomId(userId, roomId);
     }
 
     public List<RoomDetailResponse> getFavoriteRooms(Long userId) {
-        return favoriteRepository.findByUserIdOrderByCreatedAtDesc(userId)
+        return favoriteRepository.findByUserIdWithRoom(userId)
             .stream()
             .map(Favorite::getRoom)
             .map(room -> roomResponseMapper.toRoomDetailResponse(room, userId))
             .toList();
     }
 
+    @Transactional
     public SavedSearchResponse saveSearch(Long userId, SavedSearchRequest request) {
         User user = getUser(userId);
         SavedSearch savedSearch = new SavedSearch();
@@ -96,10 +101,12 @@ public class UserFeatureService {
             .toList();
     }
 
+    @Transactional
     public void deleteSavedSearch(Long userId, Long savedSearchId) {
         savedSearchRepository.deleteByIdAndUserId(savedSearchId, userId);
     }
 
+    @Transactional
     public RoomReportResponse createReport(Long roomId, Long reporterId, RoomReportRequest request) {
         Room room = getRoom(roomId);
         User reporter = getUser(reporterId);
