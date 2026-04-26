@@ -1,78 +1,202 @@
-# 🏠 BTL_WEB_2026 - Room Management System (Backend)
+# BTL_WEB_2026 - Room Rental Listing Management System
 
-Hệ thống quản lý tin đăng cho thuê phòng trọ được xây dựng trên nền tảng Spring Boot. Dự án tập trung vào việc cung cấp các API xử lý nghiệp vụ tìm kiếm, đăng tin và xác thực người dùng.
-
----
-
-## 🛠 Tech Stack (Công nghệ sử dụng)
-
-- **Language:** Java 17
-- **Framework:** Spring Boot 3.3.5
-- **Database:** MySQL / TiDB Cloud
-- **Security:** Spring Security + JWT (jjwt 0.12.5) + BCrypt hashing
-- **ORM:** Spring Data JPA (Hibernate)
-- **Dependency Management:** Maven
+A full-stack web application for managing room rental listings, built with Spring Boot (Backend) and Vanilla JavaScript (Frontend). The system provides RESTful APIs for user authentication, room CRUD operations, advanced search, and favorites management.
 
 ---
 
-## 🏗 Kiến trúc hệ thống (Architecture Overview)
+## Tech Stack
 
-Dự án áp dụng mô hình **Layered Architecture (Kiến trúc phân lớp)** nhằm đảm bảo tính bảo trì và mở rộng:
-
-| Package | Vai trò |
-| :--- | :--- |
-| `controller/` | Tiếp nhận request từ Client, điều hướng luồng và trả về Response. |
-| `service/` | Chứa logic nghiệp vụ (Business Logic). Đây là trái tim của ứng dụng. |
-| `repository/` | Tương tác trực tiếp với Database thông qua Spring Data JPA. |
-| `entity/` | Định nghĩa cấu trúc bảng trong Database (User, Room, Image, v.v.). |
-| `dto/` | Các đối tượng vận chuyển dữ liệu giữa Client và Server. |
-| `config/` | Cấu hình hệ thống (CORS, Security, Seeder dữ liệu). |
-
-**Luồng giao tiếp:** `Client` ↔ `Controller` ↔ `Service` ↔ `Repository` ↔ `Database (JPA)`
+| Layer | Technology |
+|-------|------------|
+| **Backend** | Java 17, Spring Boot 3.3.5 |
+| **Database** | MySQL / TiDB Cloud |
+| **ORM** | Spring Data JPA (Hibernate 6) |
+| **Security** | Spring Security + JWT (jjwt 0.12.5) + BCrypt |
+| **Frontend** | HTML5, Vanilla JavaScript |
+| **Build Tool** | Maven |
 
 ---
 
-## 🔄 Luồng dữ liệu chính (Data Flow)
+## Architecture
 
-### 1. Luồng Xác thực (Authentication)
-Dùng để đăng ký tài khoản mới hoặc đăng nhập lấy Token:
-`Client` → `AuthController` → `AuthService` → `UserRepository` → `BCrypt` (Mã hóa/Kiểm tra) → `JwtService` (Tạo Token) → `Response`.
+The project follows **Layered Architecture** pattern to ensure maintainability and scalability:
 
-### 2. Luồng Quản lý Phòng (CRUD Room)
-Xử lý các thao tác tạo, sửa, xóa phòng:
-- **Tạo:** Kiểm tra logic giá (`priceFrom` ≤ `priceTo`) → Lấy `userId` từ Token → Lưu Entity → Lưu Files ảnh (Uploads) → Lưu thông tin liên hệ.
-- **Xóa:** Kiểm tra quyền (Owner/Admin) → Xóa bản ghi ảnh & Files vật lý → Xóa Contact → Xóa Room.
+```
+Client → Controller → Service → Repository → Database (JPA)
+```
 
-### 3. Luồng Tìm kiếm (Advanced Search)
-`GET /api/v1/rooms/search`
-Sử dụng các tham số dynamic: `keyword`, `district`, `minPrice`, `maxPrice`.
-- `RoomQueryService` sẽ chuẩn hóa dữ liệu.
-- `RoomRepository` thực hiện truy vấn JPQL tùy biến để lấy dữ liệu tối ưu.
+### Package Structure
 
----
-
-## 🚀 Tính năng cốt lõi
-
-### 🔐 Authentication Flow
-- **Register:** Kiểm tra email trùng lặp (không phân biệt hoa thường) -> Hash password bằng BCrypt -> Lưu User.
-- **Login:** Tìm user theo email -> Kiểm tra `isActive` -> Verify password -> Trả về JWT.
-
-### 📝 Room Management
-- **Quyền hạn:** Chỉ chủ sở hữu (Owner) của tin đăng hoặc Admin mới có quyền chỉnh sửa/xóa.
-- **Xử lý ảnh:** Hỗ trợ Multipart file, tự động dọn dẹp file cũ khi cập nhật hoặc xóa tin.
-
-### 🔍 Search & Filter
-- Tìm kiếm theo khu vực (District).
-- Lọc theo khoảng giá linh hoạt.
-- Tự động đính kèm thông tin liên hệ và danh sách ảnh khi trả về kết quả.
+| Package | Responsibility |
+|---------|---------------|
+| `controller/` | Handle HTTP requests, route to service layer |
+| `service/` | Business logic implementation |
+| `repository/` | Data access via Spring Data JPA |
+| `entity/` | JPA entity definitions (User, Room, Favorite, etc.) |
+| `dto/` | Data transfer objects for API requests/responses |
+| `config/` | System configuration (CORS, Security, Seeder) |
 
 ---
 
-## ⚙️ Cài đặt & Chạy thử
+## API Endpoints
 
-1. **Yêu cầu:** Java 17+, MySQL 8.0+.
-2. **Cấu hình DB:** Thay đổi thông tin kết nối trong `src/main/resources/application.properties`.
-3. **Chạy ứng dụng:**
-   ```bash
-   mvn clean install
-   mvn spring-boot:run
+### Authentication
+| Method | Endpoint | Description |
+|--------|----------|------------|
+| POST | `/api/v1/auth/register` | Register new user account |
+| POST | `/api/v1/auth/login` | Login and receive JWT token |
+
+### Rooms
+| Method | Endpoint | Description |
+|--------|----------|------------|
+| GET | `/api/v1/rooms/{id}` | Get room details by ID |
+| GET | `/api/v1/rooms/search` | Search rooms with filters |
+| GET | `/api/v1/rooms/initial` | Get initial room list |
+| GET | `/api/v1/rooms/highlights` | Get featured rooms |
+| POST | `/api/v1/rooms` | Create new room listing |
+| PUT | `/api/v1/rooms/{id}` | Update room listing |
+| DELETE | `/api/v1/rooms/{id}` | Delete room listing |
+
+### User Features
+| Method | Endpoint | Description |
+|--------|----------|------------|
+| POST | `/api/v1/rooms/{id}/favorite` | Add room to favorites |
+| DELETE | `/api/v1/rooms/{id}/favorite` | Remove room from favorites |
+| GET | `/api/v1/rooms/favorites/my` | Get user's favorite rooms |
+| POST | `/api/v1/rooms/saved-searches` | Save search criteria |
+| GET | `/api/v1/rooms/saved-searches/my` | Get saved searches |
+| POST | `/api/v1/rooms/{id}/reports` | Report a room |
+
+### Admin
+| Method | Endpoint | Description |
+|--------|----------|------------|
+| GET | `/api/v1/rooms/admin/all` | Get all rooms (admin) |
+| GET | `/api/v1/rooms/admin/reports` | Get all reports |
+| PUT | `/api/v1/rooms/admin/reports/{id}/status` | Update report status |
+
+---
+
+## Key Features
+
+### Authentication & Authorization
+- JWT-based authentication with 24-hour token expiration
+- BCrypt password hashing
+- Role-based access control (USER, ADMIN)
+
+### Room Management
+- Create, read, update, delete room listings
+- Multi-image upload support (max 10MB per file)
+- Automatic cleanup of old files when updating/deleting
+- Owner-only editing (except admin)
+
+### Search & Filter
+- Keyword search (title, address)
+- District filtering
+- Price range filtering (minPrice, maxPrice)
+
+### Favorites & Saved Searches
+- Save/remove rooms to favorites
+- Save search criteria for quick access
+
+---
+
+## Database Schema
+
+### Core Entities
+
+**User**
+- id, email (unique), password, fullName, phone, role, avatarUrl, isActive, createdAt
+
+**Room**
+- id, userId, title, address, district, city, mapAddress, priceFrom, priceTo, area, direction, bedrooms, bathrooms, description, status, viewCount, contactClickCount, isFeatured, createdAt, updatedAt
+
+**RoomImage**
+- id, roomId, imageUrl, sortOrder
+
+**RoomContact**
+- id, roomId, contactName, contactPhone, contactEmail
+
+**Favorite**
+- id, userId, roomId, createdAt
+
+**SavedSearch**
+- id, userId, name, keyword, district, minPrice, maxPrice, createdAt
+
+**RoomReport**
+- id, roomId, reporterId, reason, detailText, status, createdAt
+
+---
+
+## Setup & Run
+
+### Prerequisites
+- Java 17 or higher
+- Maven 3.8+
+- MySQL 8.0+ (or TiDB Cloud account)
+
+
+### Build & Run
+
+```bash
+# Build
+cd Backend
+mvn clean package -DskipTests
+
+# Run
+mvn spring-boot:run
+```
+
+The application runs on port **4000** by default.
+
+### Frontend
+
+Open `Frontend/index.html` in a browser. Configure API base URL in `Frontend/assets/js/config.js`:
+
+```javascript
+API_BASE_URL: 'http://localhost:4000/api/v1'  // Production: your deployed backend URL
+```
+
+---
+
+## Security
+
+- JWT tokens are signed with HS256 algorithm
+- Passwords are hashed using BCrypt
+- API endpoints require authentication for protected operations
+- CORS is configured to allow all origins (`*`)
+
+---
+
+## Project Structure
+
+```
+BTL_WEB_2026/
+├── Backend/
+│   ├── src/main/java/com/troxinh/backend/
+│   │   ├── controller/      # REST controllers
+│   │   ├── service/        # Business logic
+│   │   ├── repository/     # Data access
+│   │   ├── entity/        # JPA entities
+│   │   ├── dto/           # Data transfer objects
+│   │   └── config/        # Configuration classes
+│   └── src/main/resources/
+│       └── application.yml
+│
+├── Frontend/
+│   ├── assets/
+│   │   ├── css/           # Stylesheets
+│   │   ├── js/            # JavaScript modules
+│   │   └── img/           # Static images
+│   ├── index.html        # Home page
+│   ├── login.html       # Login page
+│   ├── rooms.html       # Room listing page
+│   └── ...
+│
+└── README.md
+```
+
+---
+
+## License
+
+This project is for educational purposes as part of BTL Web 2026 course.
