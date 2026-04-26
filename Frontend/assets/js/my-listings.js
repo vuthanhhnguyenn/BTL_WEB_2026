@@ -5,19 +5,26 @@
   const cancelDeleteBtn = document.getElementById('cancelDelete');
   const confirmDeleteBtn = document.getElementById('confirmDelete');
 
+  const statTotalRooms = document.getElementById('statTotalRooms');
+  const statFeaturedRooms = document.getElementById('statFeaturedRooms');
+  const statTotalViews = document.getElementById('statTotalViews');
+  const statContactClicks = document.getElementById('statContactClicks');
+  const statFavoriteCount = document.getElementById('statFavoriteCount');
+
   let pendingDeleteId = null;
 
-  const getCurrentUser = () => {
-    return window.ApiService?.getCurrentUser?.();
-  };
+  const getCurrentUser = () => window.ApiService?.getCurrentUser?.();
 
   const getStatusBadge = (status) => {
     const statusMap = {
-      'AVAILABLE': { text: 'Còn trống', class: 'badge-success' },
-      'RENTED': { text: 'Đã thuê', class: 'badge-warning' },
-      'EXPIRED': { text: 'Hết hạn', class: 'badge-danger' }
+      AVAILABLE: { text: 'Còn trống', class: 'badge-success' },
+      RENTED: { text: 'Đã thuê', class: 'badge-warning' },
+      EXPIRED: { text: 'Hết hạn', class: 'badge-danger' },
+      PENDING: { text: 'Chờ duyệt', class: 'badge-warning' },
+      APPROVED: { text: 'Đã duyệt', class: 'badge-success' },
+      REJECTED: { text: 'Từ chối', class: 'badge-danger' }
     };
-    const config = statusMap[status] || { text: status || 'Không rõ', class: '' };
+    const config = statusMap[String(status || '').toUpperCase()] || { text: status || 'Không rõ', class: '' };
     return `<span class="badge ${config.class}">${config.text}</span>`;
   };
 
@@ -25,13 +32,22 @@
     <article class="card room-card zoom-hover page-enter">
       <div class="room-card-image-wrap">
         <img src="${room.images[0]}" alt="${room.title}">
-        <div class="room-card-status">${getStatusBadge(room.status)}</div>
+        <div class="room-card-status">${room.featured ? '<span class="featured-pill">Nổi bật</span>' : getStatusBadge(room.status)}</div>
       </div>
       <div class="room-card-body">
-        <h3>${room.title}</h3>
+        <div class="room-card-topline">
+          <h3>${room.title}</h3>
+            <button class="btn btn-outline featured-toggle-btn" type="button" data-id="${room.id}" data-featured="${room.featured ? 'true' : 'false'}">
+            ${room.featured ? 'Tắt nổi bật' : 'Bật nổi bật'}
+          </button>
+        </div>
         <div class="room-meta">${room.address}</div>
         <div class="room-price">${ApiService.formatCurrency(room.priceFrom)} - ${ApiService.formatCurrency(room.priceTo)}</div>
-        <div class="room-meta">${room.area}m2 | ${room.bedrooms} PN | ${room.bathrooms} WC</div>
+        <div class="mini-stats">
+          <div class="mini-stat"><strong>${room.viewCount || 0}</strong><span>Lượt xem</span></div>
+          <div class="mini-stat"><strong>${room.contactClickCount || 0}</strong><span>Liên hệ</span></div>
+          <div class="mini-stat"><strong>${room.favoriteCount || 0}</strong><span>Yêu thích</span></div>
+        </div>
         <div class="room-card-actions">
           <a class="btn btn-outline" href="room-detail.html?id=${room.id}">Xem</a>
           <a class="btn btn-primary" href="edit-room.html?id=${room.id}">Sửa</a>
@@ -50,25 +66,57 @@
     pendingDeleteId = null;
   };
 
+  const renderStats = async () => {
+    try {
+      const stats = await ApiService.getOwnerStats();
+      if (statTotalRooms) statTotalRooms.textContent = String(stats.totalRooms || 0);
+      if (statFeaturedRooms) statFeaturedRooms.textContent = String(stats.featuredRooms || 0);
+      if (statTotalViews) statTotalViews.textContent = String(stats.totalViews || 0);
+      if (statContactClicks) statContactClicks.textContent = String(stats.totalContactClicks || 0);
+      if (statFavoriteCount) statFavoriteCount.textContent = String(stats.totalFavorites || 0);
+    } catch {
+      // Keep cards at 0 when stats fail.
+    }
+  };
+
   const handleDelete = async (id) => {
     try {
       await window.ApiService?.deleteRoom?.(id);
       hideModal();
       renderListings();
+      renderStats();
     } catch (error) {
       hideModal();
-      if (resultInfo) {
-        resultInfo.innerHTML = `<span class="message error">${error.message || 'Không thể xóa tin này.'}</span>`;
-      }
+      if (resultInfo) resultInfo.innerHTML = `<span class="message error">${error.message || 'Không thể xóa tin này.'}</span>`;
     }
+  };
+
+  const bindCardActions = () => {
+    listNode?.querySelectorAll('.delete-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        pendingDeleteId = btn.dataset.id;
+        showModal();
+      });
+    });
+
+    listNode?.querySelectorAll('.featured-toggle-btn').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        try {
+          const featured = btn.dataset.featured !== 'true';
+          await ApiService.setRoomFeatured(btn.dataset.id, featured);
+          renderListings();
+          renderStats();
+        } catch (error) {
+          if (resultInfo) resultInfo.innerHTML = `<span class="message error">${error.message || 'Không thể cập nhật gói nổi bật.'}</span>`;
+        }
+      });
+    });
   };
 
   const renderListings = async () => {
     const currentUser = getCurrentUser();
     if (!currentUser || !currentUser.id) {
-      if (listNode) {
-        listNode.innerHTML = '<p class="message error">Vui lòng đăng nhập để xem tin đã đăng.</p>';
-      }
+      if (listNode) listNode.innerHTML = '<p class="message error">Vui lòng đăng nhập để xem tin đã đăng.</p>';
       return;
     }
 
@@ -81,66 +129,42 @@
       const total = Number(data?.totalElements || rooms.length);
 
       if (resultInfo) {
-        resultInfo.textContent = total > 0
-          ? `Bạn đang có ${total} tin đăng.`
-          : 'Bạn chưa có tin đăng nào.';
+        resultInfo.textContent = total > 0 ? `Bạn đang có ${total} tin đăng.` : 'Bạn chưa có tin đăng nào.';
       }
 
       if (!rooms.length) {
         listNode.innerHTML = `
           <div style="grid-column: 1/-1; text-align: center; padding: 40px 20px;">
             <p class="section-subtitle">Bạn chưa có tin đăng nào.</p>
-            <br>
             <a class="btn btn-primary" href="post-room.html">Đăng tin ngay</a>
           </div>
         `;
         return;
       }
 
-      listNode.innerHTML = rooms.map(room => listingCardHtml(room)).join('');
-
-      listNode.querySelectorAll('.delete-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-          pendingDeleteId = btn.dataset.id;
-          showModal();
-        });
-      });
+      listNode.innerHTML = rooms.map((room) => listingCardHtml(room)).join('');
+      bindCardActions();
     } catch (error) {
-      if (listNode) {
-        listNode.innerHTML = `<p class="message error">${error.message || 'Không thể tải danh sách tin.'}</p>`;
-      }
+      listNode.innerHTML = `<p class="message error">${error.message || 'Không thể tải danh sách tin.'}</p>`;
     }
   };
 
   const init = () => {
     const currentUser = getCurrentUser();
     if (!currentUser || !currentUser.id) {
-      if (listNode) {
-        listNode.innerHTML = '<p class="message error">Vui lòng đăng nhập để xem tin đã đăng.</p>';
-      }
+      if (listNode) listNode.innerHTML = '<p class="message error">Vui lòng đăng nhập để xem tin đã đăng.</p>';
       return;
     }
 
-    if (cancelDeleteBtn) {
-      cancelDeleteBtn.addEventListener('click', hideModal);
-    }
+    cancelDeleteBtn?.addEventListener('click', hideModal);
+    confirmDeleteBtn?.addEventListener('click', () => {
+      if (pendingDeleteId) handleDelete(pendingDeleteId);
+    });
+    confirmModal?.addEventListener('click', (e) => {
+      if (e.target === confirmModal) hideModal();
+    });
 
-    if (confirmDeleteBtn) {
-      confirmDeleteBtn.addEventListener('click', () => {
-        if (pendingDeleteId) {
-          handleDelete(pendingDeleteId);
-        }
-      });
-    }
-
-    if (confirmModal) {
-      confirmModal.addEventListener('click', (e) => {
-        if (e.target === confirmModal) {
-          hideModal();
-        }
-      });
-    }
-
+    renderStats();
     renderListings();
   };
 

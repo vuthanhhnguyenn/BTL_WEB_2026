@@ -2,10 +2,16 @@ package com.troxinh.backend.controller;
 
 import com.troxinh.backend.dto.room.RoomCreateRequest;
 import com.troxinh.backend.dto.room.RoomDetailResponse;
+import com.troxinh.backend.dto.room.OwnerRoomStatsResponse;
+import com.troxinh.backend.dto.room.RoomReportRequest;
+import com.troxinh.backend.dto.room.RoomReportResponse;
 import com.troxinh.backend.dto.room.RoomUpdateRequest;
+import com.troxinh.backend.dto.user.SavedSearchRequest;
+import com.troxinh.backend.dto.user.SavedSearchResponse;
 import com.troxinh.backend.service.RoomDetailService;
 import com.troxinh.backend.service.RoomQueryService;
 import com.troxinh.backend.service.RoomWriteService;
+import com.troxinh.backend.service.UserFeatureService;
 import jakarta.validation.Valid;
 import java.util.List;
 import org.springframework.http.HttpStatus;
@@ -33,20 +39,27 @@ public class RoomController {
     private final RoomDetailService roomDetailService;
     private final RoomQueryService roomQueryService;
     private final RoomWriteService roomWriteService;
+    private final UserFeatureService userFeatureService;
 
     public RoomController(
         RoomDetailService roomDetailService,
         RoomQueryService roomQueryService,
-        RoomWriteService roomWriteService
+        RoomWriteService roomWriteService,
+        UserFeatureService userFeatureService
     ) {
         this.roomDetailService = roomDetailService;
         this.roomQueryService = roomQueryService;
         this.roomWriteService = roomWriteService;
+        this.userFeatureService = userFeatureService;
     }
 
     @GetMapping("/{id:\\d+}")
-    public RoomDetailResponse getRoomDetail(@PathVariable Long id) {
-        return roomDetailService.getRoomDetail(id);
+    public RoomDetailResponse getRoomDetail(
+        @PathVariable Long id,
+        @RequestHeader(value = "Authorization", required = false) String authorizationHeader
+    ) {
+        Long userId = roomWriteService.getUserIdFromToken(authorizationHeader);
+        return roomDetailService.getRoomDetail(id, userId);
     }
 
     @GetMapping("/ids/first-12")
@@ -55,8 +68,21 @@ public class RoomController {
     }
 
     @GetMapping("/initial")
-    public RoomSearchResponse getInitialRooms(@RequestParam(defaultValue = "5") Integer limit) {
-        return roomQueryService.getInitialRooms(limit);
+    public RoomSearchResponse getInitialRooms(
+        @RequestParam(defaultValue = "5") Integer limit,
+        @RequestHeader(value = "Authorization", required = false) String authorizationHeader
+    ) {
+        Long userId = roomWriteService.getUserIdFromToken(authorizationHeader);
+        return roomQueryService.getInitialRooms(limit, userId);
+    }
+
+    @GetMapping("/highlights")
+    public RoomSearchResponse getHighlights(
+        @RequestParam(defaultValue = "12") Integer limit,
+        @RequestHeader(value = "Authorization", required = false) String authorizationHeader
+    ) {
+        Long userId = roomWriteService.getUserIdFromToken(authorizationHeader);
+        return roomQueryService.getHighlights(limit, userId);
     }
 
     @GetMapping("/search")
@@ -64,9 +90,11 @@ public class RoomController {
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) String district,
             @RequestParam(required = false) Long minPrice,
-            @RequestParam(required = false) Long maxPrice
+            @RequestParam(required = false) Long maxPrice,
+            @RequestHeader(value = "Authorization", required = false) String authorizationHeader
     ) {
-        return roomQueryService.searchRooms(keyword, district, minPrice, maxPrice);
+        Long userId = roomWriteService.getUserIdFromToken(authorizationHeader);
+        return roomQueryService.searchRooms(keyword, district, minPrice, maxPrice, userId);
     }
 
     @GetMapping("/my")
@@ -83,7 +111,8 @@ public class RoomController {
         if (!roomWriteService.isAdmin(authorizationHeader)) {
             throw new org.springframework.web.server.ResponseStatusException(HttpStatus.FORBIDDEN, "Admin access required");
         }
-        return roomQueryService.getAllRoomsForAdmin();
+        Long userId = roomWriteService.getUserIdFromToken(authorizationHeader);
+        return roomQueryService.getAllRoomsForAdmin(userId);
     }
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -121,17 +150,132 @@ public class RoomController {
         return ResponseEntity.ok(Map.of("success", true, "message", "Room status updated"));
     }
 
+    @PutMapping("/{id}/featured")
+    public ResponseEntity<RoomDetailResponse> updateFeatured(
+        @PathVariable Long id,
+        @RequestBody Map<String, Boolean> body,
+        @RequestHeader(value = "Authorization", required = false) String authorizationHeader
+    ) {
+        Long userId = roomWriteService.getUserIdFromToken(authorizationHeader);
+        boolean featured = Boolean.TRUE.equals(body.get("featured"));
+        return ResponseEntity.ok(roomWriteService.updateFeatured(id, featured, userId, authorizationHeader));
+    }
+
+    @PostMapping("/{id}/favorite")
+    public ResponseEntity<Map<String, Object>> addFavorite(
+        @PathVariable Long id,
+        @RequestHeader(value = "Authorization", required = false) String authorizationHeader
+    ) {
+        Long userId = requireUserId(authorizationHeader);
+        userFeatureService.addFavorite(userId, id);
+        return ResponseEntity.ok(Map.of("success", true));
+    }
+
+    @DeleteMapping("/{id}/favorite")
+    public ResponseEntity<Map<String, Object>> removeFavorite(
+        @PathVariable Long id,
+        @RequestHeader(value = "Authorization", required = false) String authorizationHeader
+    ) {
+        Long userId = requireUserId(authorizationHeader);
+        userFeatureService.removeFavorite(userId, id);
+        return ResponseEntity.ok(Map.of("success", true));
+    }
+
+    @GetMapping("/favorites/my")
+    public RoomSearchResponse getMyFavorites(@RequestHeader(value = "Authorization", required = false) String authorizationHeader) {
+        Long userId = requireUserId(authorizationHeader);
+        List<RoomDetailResponse> rooms = userFeatureService.getFavoriteRooms(userId);
+        return new RoomSearchResponse(rooms, rooms.size());
+    }
+
+    @PostMapping("/saved-searches")
+    public ResponseEntity<SavedSearchResponse> saveSearch(
+        @Valid @RequestBody SavedSearchRequest request,
+        @RequestHeader(value = "Authorization", required = false) String authorizationHeader
+    ) {
+        Long userId = requireUserId(authorizationHeader);
+        return ResponseEntity.status(HttpStatus.CREATED).body(userFeatureService.saveSearch(userId, request));
+    }
+
+    @GetMapping("/saved-searches/my")
+    public List<SavedSearchResponse> getSavedSearches(
+        @RequestHeader(value = "Authorization", required = false) String authorizationHeader
+    ) {
+        Long userId = requireUserId(authorizationHeader);
+        return userFeatureService.getSavedSearches(userId);
+    }
+
+    @DeleteMapping("/saved-searches/{id}")
+    public ResponseEntity<Map<String, Object>> deleteSavedSearch(
+        @PathVariable Long id,
+        @RequestHeader(value = "Authorization", required = false) String authorizationHeader
+    ) {
+        Long userId = requireUserId(authorizationHeader);
+        userFeatureService.deleteSavedSearch(userId, id);
+        return ResponseEntity.ok(Map.of("success", true));
+    }
+
+    @GetMapping("/my/stats")
+    public OwnerRoomStatsResponse getOwnerStats(
+        @RequestHeader(value = "Authorization", required = false) String authorizationHeader
+    ) {
+        Long userId = requireUserId(authorizationHeader);
+        return userFeatureService.getOwnerStats(userId);
+    }
+
+    @PostMapping("/{id}/reports")
+    public ResponseEntity<RoomReportResponse> createReport(
+        @PathVariable Long id,
+        @Valid @RequestBody RoomReportRequest request,
+        @RequestHeader(value = "Authorization", required = false) String authorizationHeader
+    ) {
+        Long userId = requireUserId(authorizationHeader);
+        return ResponseEntity.status(HttpStatus.CREATED).body(userFeatureService.createReport(id, userId, request));
+    }
+
+    @GetMapping("/admin/reports")
+    public List<RoomReportResponse> getAdminReports(
+        @RequestHeader(value = "Authorization", required = false) String authorizationHeader
+    ) {
+        if (!roomWriteService.isAdmin(authorizationHeader)) {
+            throw new org.springframework.web.server.ResponseStatusException(HttpStatus.FORBIDDEN, "Admin access required");
+        }
+        return userFeatureService.getAdminReports();
+    }
+
+    @PutMapping("/admin/reports/{id}/status")
+    public RoomReportResponse updateReportStatus(
+        @PathVariable Long id,
+        @RequestBody Map<String, String> body,
+        @RequestHeader(value = "Authorization", required = false) String authorizationHeader
+    ) {
+        if (!roomWriteService.isAdmin(authorizationHeader)) {
+            throw new org.springframework.web.server.ResponseStatusException(HttpStatus.FORBIDDEN, "Admin access required");
+        }
+        return userFeatureService.updateReportStatus(id, body.getOrDefault("status", "REVIEWED"));
+    }
+
+    @PostMapping("/{id}/contact-click")
+    public ResponseEntity<Map<String, Object>> recordContactClick(@PathVariable Long id) {
+        roomDetailService.incrementContactClick(id);
+        return ResponseEntity.ok(Map.of("success", true));
+    }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteRoom(
         @PathVariable Long id,
         @RequestHeader(value = "Authorization", required = false) String authorizationHeader
     ) {
         Long userId = roomWriteService.getUserIdFromToken(authorizationHeader);
-        if (roomWriteService.isAdmin(authorizationHeader)) {
-            roomDetailService.deleteRoomAsAdmin(id);
-        } else {
-            roomWriteService.deleteRoom(id, userId, authorizationHeader);
-        }
+        roomWriteService.deleteRoom(id, userId, authorizationHeader);
         return ResponseEntity.noContent().build();
+    }
+
+    private Long requireUserId(String authorizationHeader) {
+        Long userId = roomWriteService.getUserIdFromToken(authorizationHeader);
+        if (userId == null) {
+            throw new org.springframework.web.server.ResponseStatusException(HttpStatus.UNAUTHORIZED, "Login required");
+        }
+        return userId;
     }
 }

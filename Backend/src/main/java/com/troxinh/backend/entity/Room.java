@@ -66,6 +66,9 @@ public class Room {
     @Column(name = "view_count", nullable = false)
     private Integer viewCount;
 
+    @Column(name = "contact_click_count", nullable = false)
+    private Integer contactClickCount;
+
     @Column(name = "is_featured", nullable = false)
     private Boolean isFeatured;
 
@@ -201,6 +204,14 @@ public class Room {
 
     public void setViewCount(Integer viewCount) {
         this.viewCount = viewCount;
+    }
+
+    public Integer getContactClickCount() {
+        return contactClickCount;
+    }
+
+    public void setContactClickCount(Integer contactClickCount) {
+        this.contactClickCount = contactClickCount;
     }
 
     public Boolean getIsFeatured() {

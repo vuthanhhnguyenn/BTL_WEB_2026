@@ -9,12 +9,12 @@ import com.troxinh.backend.entity.Room;
 import com.troxinh.backend.entity.RoomContact;
 import com.troxinh.backend.entity.RoomImage;
 import com.troxinh.backend.entity.User;
+import com.troxinh.backend.repository.FavoriteRepository;
 import com.troxinh.backend.repository.RoomContactRepository;
 import com.troxinh.backend.repository.RoomImageRepository;
+import com.troxinh.backend.repository.RoomReportRepository;
 import com.troxinh.backend.repository.RoomRepository;
 import com.troxinh.backend.repository.UserRepository;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -38,22 +38,31 @@ public class RoomWriteService {
     private final RoomRepository roomRepository;
     private final RoomImageRepository roomImageRepository;
     private final RoomContactRepository roomContactRepository;
+    private final FavoriteRepository favoriteRepository;
+    private final RoomReportRepository roomReportRepository;
     private final UserRepository userRepository;
     private final JwtService jwtService;
+    private final RoomResponseMapper roomResponseMapper;
 
     public RoomWriteService(
         RoomRepository roomRepository,
         RoomImageRepository roomImageRepository,
         RoomContactRepository roomContactRepository,
+        FavoriteRepository favoriteRepository,
+        RoomReportRepository roomReportRepository,
         UserRepository userRepository,
         JwtService jwtService,
+        RoomResponseMapper roomResponseMapper,
         org.springframework.core.env.Environment environment
     ) {
         this.roomRepository = roomRepository;
         this.roomImageRepository = roomImageRepository;
         this.roomContactRepository = roomContactRepository;
+        this.favoriteRepository = favoriteRepository;
+        this.roomReportRepository = roomReportRepository;
         this.userRepository = userRepository;
         this.jwtService = jwtService;
+        this.roomResponseMapper = roomResponseMapper;
         this.uploadRoot = resolveUploadRoot(environment);
     }
 
@@ -80,6 +89,7 @@ public class RoomWriteService {
         room.setDescription(normalize(request.description()));
         room.setStatus(DEFAULT_STATUS);
         room.setViewCount(0);
+        room.setContactClickCount(0);
         room.setIsFeatured(false);
 
         Room savedRoom = roomRepository.save(room);
@@ -87,7 +97,7 @@ public class RoomWriteService {
         saveImages(savedRoom, images);
         saveContact(savedRoom, request.contact());
 
-        return buildDetailResponse(savedRoom.getId());
+        return buildDetailResponse(savedRoom.getId(), owner.getId());
     }
 
     private User resolveOwner(String authorizationHeader) {
@@ -208,45 +218,13 @@ public class RoomWriteService {
             saveImages(savedRoom, images);
         }
 
-        return buildDetailResponse(savedRoom.getId());
+        return buildDetailResponse(savedRoom.getId(), userId);
     }
 
-    private RoomDetailResponse buildDetailResponse(Long roomId) {
+    private RoomDetailResponse buildDetailResponse(Long roomId, Long currentUserId) {
         Room room = roomRepository.findById(roomId)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Room not found"));
-
-        List<String> images = roomImageRepository.findByRoomIdOrderBySortOrderAscIdAsc(roomId)
-            .stream()
-            .map(RoomImage::getImageUrl)
-            .filter(url -> url != null && !url.isBlank())
-            .toList();
-
-        if (images.isEmpty()) {
-            images = List.of(FALLBACK_IMAGE);
-        }
-
-        RoomContactResponse contact = roomContactRepository.findByRoomId(roomId)
-            .map(c -> new RoomContactResponse(c.getContactName(), c.getContactPhone(), c.getContactEmail()))
-            .orElseGet(() -> new RoomContactResponse("", "", ""));
-
-        return new RoomDetailResponse(
-            room.getId(),
-            room.getTitle(),
-            room.getAddress(),
-            room.getDistrict(),
-            room.getCity(),
-            room.getMapAddress(),
-            room.getPriceFrom(),
-            room.getPriceTo(),
-            room.getArea(),
-            room.getDirection(),
-            room.getBedrooms(),
-            room.getBathrooms(),
-            room.getDescription(),
-            room.getStatus(),
-            images,
-            contact
-        );
+        return roomResponseMapper.toRoomDetailResponse(room, currentUserId);
     }
 
     private RoomContactResponse updateContact(Room room, RoomContactRequest request) {
@@ -284,6 +262,8 @@ public class RoomWriteService {
             .filter(c -> c.getRoom().getId().equals(roomId))
             .toList());
         roomContactRepository.deleteAll(roomContactRepository.findByRoomId(roomId).stream().toList());
+        favoriteRepository.deleteByRoomId(roomId);
+        roomReportRepository.deleteByRoomId(roomId);
 
         roomRepository.delete(room);
     }
@@ -312,6 +292,20 @@ public class RoomWriteService {
     public boolean isAdmin(String authorizationHeader) {
         String role = getRoleFromToken(authorizationHeader);
         return role != null && role.equalsIgnoreCase("ADMIN");
+    }
+
+    public RoomDetailResponse updateFeatured(Long roomId, boolean featured, Long userId, String authorizationHeader) {
+        Room room = roomRepository.findById(roomId)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Room not found"));
+
+        boolean isAdmin = isAdmin(authorizationHeader);
+        if (!isAdmin && (userId == null || !room.getUser().getId().equals(userId))) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You can only update your own rooms");
+        }
+
+        room.setIsFeatured(featured);
+        Room saved = roomRepository.save(room);
+        return roomResponseMapper.toRoomDetailResponse(saved, userId);
     }
 
     private String storeFileAndBuildUrl(MultipartFile image) {

@@ -8,6 +8,9 @@
       TOKEN: "troxinh_token",
       USER: "troxinh_user",
       ROOMS: "troxinh_rooms_local",
+      FAVORITES: "troxinh_favorites_local",
+      SAVED_SEARCHES: "troxinh_saved_searches_local",
+      REPORTS: "troxinh_reports_local"
     },
   };
 

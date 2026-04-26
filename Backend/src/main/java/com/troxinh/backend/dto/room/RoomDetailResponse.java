@@ -19,6 +19,12 @@ public record RoomDetailResponse(
     String description,
     String status,
     List<String> images,
-    RoomContactResponse contact
+    RoomContactResponse contact,
+    Boolean featured,
+    Boolean favorited,
+    Integer viewCount,
+    Integer contactClickCount,
+    Long favoriteCount,
+    Long reportCount
 ) {
 }
