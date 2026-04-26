@@ -1,4 +1,4 @@
-# BTL_WEB_2026 - Room Rental Listing Management System
+# Room Rental Listing Management System
 
 A full-stack web application for managing room rental listings, built with Spring Boot (Backend) and Vanilla JavaScript (Frontend). The system provides RESTful APIs for user authentication, room CRUD operations, advanced search, and favorites management.
 
